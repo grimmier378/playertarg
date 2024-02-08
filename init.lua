@@ -101,44 +101,16 @@ function GUI_Target(open)
         ImGui.End()
         return open
     end
-    --Name and combat status
-    local isInCombat = mq.TLO.Me.Combat()
     ImGui.SetWindowFontScale(.91)
-    if (isInCombat) then
-        if (pulse) then
-            ImGui.BeginGroup()
-            barColor('pink')
-            ImGui.ProgressBar(1, ImGui.GetContentRegionAvail(), 15, '##'..mq.TLO.Me.CleanName())
-            ImGui.PopStyleColor()
-            ImGui.SetCursorPosY(ImGui.GetCursorPosY()-20)
-            ImGui.SetCursorPosX(ImGui.GetCursorPosX() + 5)
-            ImGui.Text(mq.TLO.Me.CleanName())
-            ImGui.EndGroup()
-            pulse = false
-            else
-            ImGui.BeginGroup()
-            barColor('red')
-            ImGui.ProgressBar(1, ImGui.GetContentRegionAvail(), 15, '##'..mq.TLO.Me.CleanName())
-            ImGui.PopStyleColor()
-            ImGui.SetCursorPosY(ImGui.GetCursorPosY()-20)
-            ImGui.SetCursorPosX(ImGui.GetCursorPosX() + 5)
-            ImGui.Text(mq.TLO.Me.CleanName())
-            ImGui.EndGroup()
-            pulse = true
-        end
-        else
-        ImGui.Text(mq.TLO.Me.CleanName())
-    end
-    --level
-    ImGui.SameLine(ImGui.GetWindowWidth() - 40)
-    ImGui.Text(tostring(mq.TLO.Me.Level()))
-    --class
-    ImGui.SameLine(ImGui.GetWindowWidth() - 80)
-    ImGui.Text(mq.TLO.Me.Class.ShortName())
+    --Name
+    local meName =mq.TLO.Me.CleanName()
+    ImGui.Text(meName)
+    local xpos = ImGui.GetCursorPosX()
+    ImGui.SameLine()
     --Visible
     if (mq.TLO.Target()~=nil) then
         ImGui.SameLine(ImGui.GetWindowWidth()/2)
-        ImGui.SetCursorPosY(ImGui.GetCursorPosY()-3)
+        --ImGui.SetCursorPosY(ImGui.GetCursorPosY()-3)
         ImGui.SetWindowFontScale(1.1)
         if (mq.TLO.Target.LineOfSight()) then
             ImGui.PushStyleColor(ImGuiCol.Text, 0, 1, 0, 1)
@@ -149,7 +121,38 @@ function GUI_Target(open)
             ImGui.Text(Icons.MD_VISIBILITY_OFF)
             ImGui.PopStyleColor()
         end
+        ImGui.SetCursorPosY(12)
     end
+    ImGui.SetWindowFontScale(.91)
+    --class
+    ImGui.SameLine(ImGui.GetWindowWidth() - 80)
+    ImGui.Text(mq.TLO.Me.Class.ShortName())
+    --level
+    ImGui.SameLine(ImGui.GetWindowWidth() - 40)
+    ImGui.Text(tostring(mq.TLO.Me.Level()))
+    --Combat Status
+    local isInCombat = mq.TLO.Me.Combat()
+    if (isInCombat) then
+        --ImGui.SameLine()
+        if (pulse) then
+            ImGui.BeginGroup()
+            barColor('pink')
+            pulse = false
+            else
+            ImGui.BeginGroup()
+            barColor('red')
+            pulse = true
+        end
+        ImGui.SameLine(ImGui.GetCursorStartPos())
+        ImGui.Dummy(xpos + 6 , 0)
+        ImGui.SameLine()
+        ImGui.ProgressBar(1, (ImGui.GetContentRegionAvail()/4), 10, '##'..mq.TLO.Me.CleanName())
+        ImGui.PopStyleColor()
+        ImGui.EndGroup()
+        ImGui.SameLine()
+        ImGui.SetCursorPosX(ImGui.GetCursorStartPos())
+    end
+    ImGui.Separator()
     -- My Health
     ImGui.SetWindowFontScale(0.75)
     barColor('red')
@@ -165,8 +168,6 @@ function GUI_Target(open)
         ImGui.SetCursorPosY(ImGui.GetCursorPosY()-15)
         ImGui.SetCursorPosX(ImGui.GetCursorPosX() + ((ImGui.GetWindowWidth()/2)-8))
         ImGui.Text(tostring(mq.TLO.Me.PctMana()))
-        else
-        ImGui.Text('')
     end
     ImGui.PopStyleColor()
     --My endurance bar
@@ -187,6 +188,7 @@ function GUI_Target(open)
         --Target name
         ImGui.SetCursorPosY(ImGui.GetCursorPosY()-35)
         ImGui.SetCursorPosX(8)
+        --Target Level and Class ShortName
         ImGui.Text(mq.TLO.Target.CleanName()..'\n'..tostring(mq.TLO.Target.Level() or 0)..' '..mq.TLO.Target.Class.ShortName())
         --Target lvl
         --ImGui.Text(tostring(mq.TLO.Target.Level() or 0))
