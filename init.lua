@@ -23,6 +23,14 @@ local textureWidth = 20
 local textureHeight = 20
 local ver = 'v0.6'
 local tPlayerFlags = bit32.bor(ImGuiTableFlags.NoBorders,ImGuiTableFlags.NoBordersInBody, ImGuiTableFlags.NoPadInnerX, ImGuiTableFlags.NoPadOuterX,ImGuiTableFlags.Resizable,ImGuiTableFlags.SizingFixedFit)
+local combatStateActions = {
+    COMBAT = function() DrawStatusIcon(1, 'In Combat') end,
+    DEBUFFED = function() DrawStatusIcon(2, 'Debuffed') end,
+    COOLDOWN = function() DrawStatusIcon(3, 'Cooling Down') end,
+    ACTIVE = function() DrawStatusIcon(4, 'Active') end,
+    RESTING = function() DrawStatusIcon(5, 'Resting') end,
+    NULL = function() DrawStatusIcon(6, 'Unknown') end
+}
 local function getDuration(i)
     local remaining = TARGET.Buff(i).Duration() or 0
     remaining = remaining / 1000 -- convert to seconds
@@ -61,6 +69,23 @@ function DrawInspectableSpellIcon(iconID, spell, i)
     end
     ImGui.PopID()
 end
+---@param iconID integer
+---@param spell MQSpell
+---@param i integer
+function DrawStatusIcon(iconID, txt)
+    local cursor_x, cursor_y = ImGui.GetCursorPos()
+    anim:SetTextureCell(iconID or 0)
+    ImGui.DrawTextureAnimation(anim, textureWidth-5, textureHeight-5)
+    --ImGui.SetCursorPos(cursor_x, cursor_y)
+    --ImGui.PushID(tostring(iconID) .. spell.Name() .. "_invis_btn")
+    --ImGui.InvisibleButton(spell.Name(), ImVec2(textureWidth, textureHeight),
+    -- bit32.bor(ImGuiButtonFlags.MouseButtonRight))
+    if ImGui.IsItemHovered() then
+        ImGui.BeginTooltip()
+        ImGui.Text(txt)
+        ImGui.EndTooltip()
+    end
+end
 local function targetBuffs(count)
     -- Save the original item spacing
     local originalSpacingX, originalSpacingY = ImGui.GetStyle().ItemSpacing.x, ImGui.GetStyle().ItemSpacing.y
@@ -69,7 +94,7 @@ local function targetBuffs(count)
     local iconsDrawn = 0
     -- Calculate max icons per row based on the window width
     local windowWidth = ImGui.GetWindowContentRegionWidth()
-    local maxIconsRow = math.floor(windowWidth / (textureWidth))
+    local maxIconsRow = (windowWidth) / (textureWidth-0.5)
     ImGui.BeginGroup()
     for i = 1, count do
         local sIcon = TARGET.Buff(i).SpellIcon()
@@ -82,6 +107,8 @@ local function targetBuffs(count)
             -- Use SameLine to keep drawing items on the same line, except for when a new line is needed
             if i < count then
                 ImGui.SameLine()
+                else
+                ImGui.SetCursorPosX(1)
             end
         end
     end
@@ -105,8 +132,8 @@ function GUI_Target(open)
     -- Combat Status
     if ME.Combat() then
         ImGui.SetItemAllowOverlap()
-        ImGui.SetCursorPosY(5)
-        ImGui.SetCursorPosX((ImGui.GetContentRegionAvail()/2)-15)
+        --ImGui.SetCursorPosY(10)
+        ImGui.SetCursorPosX((ImGui.GetContentRegionAvail()/2)-22)
         if pulse then
             COLOR.barColor('pink')
             pulse = false
@@ -114,28 +141,33 @@ function GUI_Target(open)
             COLOR.barColor('red')
             pulse = true
         end
-        ImGui.ProgressBar(1, 12, 12, '##c')
+        ImGui.ProgressBar(1, 21, 20, '##c')
         --ImGui.Text(Icons.MD_LENS)
         ImGui.PopStyleColor()
     end
-    ImGui.SetWindowFontScale(.91)
     ImGui.SameLine()
     ImGui.SetCursorPosX(5)
-    ImGui.SetCursorPosY(0)
+    --ImGui.SetCursorPosY(10)
     -- Player Information
+    ImGui.BeginGroup()
     if ImGui.BeginTable("##playerInfo", 4, tPlayerFlags) then
         ImGui.TableSetupColumn("##tName", ImGuiTableColumnFlags.NoResize,(ImGui.GetContentRegionAvail()*.5))
         ImGui.TableSetupColumn("##tVis", ImGuiTableColumnFlags.NoResize,16)
         ImGui.TableSetupColumn("##tIcons", ImGuiTableColumnFlags.WidthStretch,ImGui.GetContentRegionAvail()*.2)
-        ImGui.TableSetupColumn("##tClass", ImGuiTableColumnFlags.NoResize, 50)
+        ImGui.TableSetupColumn("##tClass", ImGuiTableColumnFlags.NoResize, 60)
         ImGui.TableNextRow()
         -- Name
+        ImGui.SetWindowFontScale(1)
         ImGui.TableSetColumnIndex(0)
         local meName = ME.CleanName()
         ImGui.Text(meName)
+        local combatState = mq.TLO.Me.CombatState()
+        if combatState=='COMBAT' then
+            ImGui.SameLine(ImGui.GetColumnWidth()-25)
+            DrawStatusIcon(50,'Combat')
+        end
         -- Visiblity
         ImGui.TableSetColumnIndex(1)
-        ImGui.SetWindowFontScale(1.1)
         if TARGET() ~= nil then
             if TARGET.LineOfSight() then
                 ImGui.PushStyleColor(ImGuiCol.Text, 0, 1, 0, 1)
@@ -150,10 +182,26 @@ function GUI_Target(open)
         ImGui.SetWindowFontScale(.91)
         -- Icons
         ImGui.TableSetColumnIndex(2)
+        ImGui.PushStyleVar(ImGuiStyleVar.ItemSpacing, 0, 0)
+        ImGui.Text('')
+        if TLO.Group.MainTank.ID() == ME.ID() then
+            ImGui.SameLine()
+            DrawStatusIcon(46,'Main Tank')
+        end
+        if TLO.Group.MainAssist.ID() == ME.ID() then
+            ImGui.SameLine()
+            DrawStatusIcon(49,'Main Assist')
+        end
+        ImGui.SameLine()
+        --  ImGui.SameLine()
+        ImGui.Text('')
+        ImGui.PopStyleVar()
         -- Class & Lvl
+        ImGui.SetWindowFontScale(.75)
         ImGui.TableSetColumnIndex(3)
         ImGui.Text(ME.Class.ShortName())
         ImGui.SameLine()
+        ImGui.SetWindowFontScale(.91)
         ImGui.Text(tostring(ME.Level()))
         ImGui.EndTable()
     end
@@ -183,6 +231,10 @@ function GUI_Target(open)
     ImGui.SetCursorPosX(ImGui.GetCursorPosX() + ((ImGui.GetWindowWidth()/2)-8))
     ImGui.Text(tostring(ME.PctEndurance()))
     ImGui.Separator()
+    ImGui.EndGroup()
+    if ImGui.IsItemHovered() and ImGui.IsMouseReleased(ImGuiMouseButton.Left) then
+        mq.cmd('/target  ${Me}')
+    end
     --Target Info
     if (TARGET()~= nil) then
         --Target Health Bar
@@ -255,9 +307,10 @@ function GUI_Target(open)
         ImGui.Separator()
         --Target Buffs
         if tonumber(TARGET.BuffCount()) > 0 then
+            ImGui.SetCursorPosX(1)
             targetBuffs(tonumber(TARGET.BuffCount()))
+            ImGui.Separator()
         end
-        ImGui.Separator()
         else
         ImGui.Text('')
     end
