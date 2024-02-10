@@ -23,6 +23,16 @@ local textureWidth = 20
 local textureHeight = 20
 local ver = 'v0.6'
 local tPlayerFlags = bit32.bor(ImGuiTableFlags.NoBorders,ImGuiTableFlags.NoBordersInBody, ImGuiTableFlags.NoPadInnerX, ImGuiTableFlags.NoPadOuterX,ImGuiTableFlags.Resizable,ImGuiTableFlags.SizingFixedFit)
+local function GetInfoToolTip()
+   local pInfoToolTip = ( ME.CleanName()..
+    '\t\tlvl: '..tostring(ME.Level())..
+    '\nClass: '..ME.Class.Name()..
+    '\nHealth: '..tostring(ME.CurrentHPs())..' of '..tostring(ME.MaxHPs())..
+    '\nMana: '..tostring(ME.CurrentMana())..' of '..tostring(ME.MaxMana())..
+    '\nEnd: '..tostring(ME.CurrentEndurance())..' of '..tostring(ME.MaxEndurance())
+)
+return pInfoToolTip
+end
 local combatStateActions = {
     COMBAT = function() DrawStatusIcon(1, 'In Combat') end,
     DEBUFFED = function() DrawStatusIcon(2, 'Debuffed') end,
@@ -153,7 +163,7 @@ function GUI_Target(open)
             ImGui.TableSetupColumn("##tName", ImGuiTableColumnFlags.NoResize,(ImGui.GetContentRegionAvail()*.5))
             ImGui.TableSetupColumn("##tVis", ImGuiTableColumnFlags.NoResize,16)
             ImGui.TableSetupColumn("##tIcons", ImGuiTableColumnFlags.WidthStretch,60)   --ImGui.GetContentRegionAvail()*.25)
-            ImGui.TableSetupColumn("##tClass", ImGuiTableColumnFlags.NoResize,55)
+            ImGui.TableSetupColumn("##tLvl", ImGuiTableColumnFlags.NoResize,30)
             ImGui.TableNextRow()
             -- Name
             ImGui.SetWindowFontScale(1)
@@ -195,15 +205,20 @@ function GUI_Target(open)
             --  ImGui.SameLine()
             ImGui.Text('')
             ImGui.PopStyleVar()
-            -- Class & Lvl
+            -- Lvl
             ImGui.TableSetColumnIndex(3)
             ImGui.PushStyleVar(ImGuiStyleVar.ItemSpacing, 2, 0)
-            ImGui.SetWindowFontScale(.91)
-            ImGui.Text(tostring(ME.Level()))
-            --ImGui.Text(tostring('125'))
-            ImGui.SameLine()
-            ImGui.SetWindowFontScale(.75)
-            ImGui.Text(ME.Class.ShortName())
+            ImGui.SetWindowFontScale(1)
+            ImGui.Text(tostring(ME.Level() or 0))
+           -- ImGui.Text(tostring('125'))
+            if ImGui.IsItemHovered() then
+                ImGui.BeginTooltip()
+                ImGui.Text(GetInfoToolTip())
+                ImGui.EndTooltip()
+            end            
+            -- ImGui.SameLine()
+            -- ImGui.SetWindowFontScale(.75)
+            -- ImGui.Text(ME.Class.ShortName())
             --ImGui.Text('UNK')
             ImGui.PopStyleVar()
             ImGui.EndTable()
@@ -212,27 +227,27 @@ function GUI_Target(open)
         -- My Health Bar
         ImGui.SetWindowFontScale(0.75)
         COLOR.barColor('red')
-        ImGui.ProgressBar(((tonumber(ME.PctHPs() or 0))/100), ImGui.GetContentRegionAvail(), 10, '##'..ME.PctHPs())
+        ImGui.ProgressBar(((tonumber(ME.PctHPs() or 0))/100), ImGui.GetContentRegionAvail(), 10, '##pctHps')
         ImGui.PopStyleColor()
         ImGui.SetCursorPosY(ImGui.GetCursorPosY()-15)
         ImGui.SetCursorPosX(ImGui.GetCursorPosX() + ((ImGui.GetWindowWidth()/2)-8))
-        ImGui.Text(tostring(ME.PctHPs()))
+        ImGui.Text(tostring(ME.PctHPs() or 0))
         --My Mana Bar
         if (tonumber(ME.MaxMana())>0) then
             COLOR.barColor('blue')
-            ImGui.ProgressBar(((tonumber(ME.PctMana() or 0))/100), ImGui.GetContentRegionAvail(), 10, '##' ..ME.PctMana())
+            ImGui.ProgressBar(((tonumber(ME.PctMana() or 0))/100), ImGui.GetContentRegionAvail(), 10, '##pctMana')
             ImGui.PopStyleColor()
             ImGui.SetCursorPosY(ImGui.GetCursorPosY()-15)
             ImGui.SetCursorPosX(ImGui.GetCursorPosX() + ((ImGui.GetWindowWidth()/2)-8))
-            ImGui.Text(tostring(ME.PctMana()))
+            ImGui.Text(tostring(ME.PctMana()or 0))
         end
         --My Endurance barB
         COLOR.barColor('yellow')
-        ImGui.ProgressBar(((tonumber(ME.PctEndurance() or 0))/100), ImGui.GetContentRegionAvail(), 10, '##'..ME.PctEndurance())
+        ImGui.ProgressBar(((tonumber(ME.PctEndurance() or 0))/100), ImGui.GetContentRegionAvail(), 10, '##pctEndurance')
         ImGui.PopStyleColor()
         ImGui.SetCursorPosY(ImGui.GetCursorPosY()-15)
         ImGui.SetCursorPosX(ImGui.GetCursorPosX() + ((ImGui.GetWindowWidth()/2)-8))
-        ImGui.Text(tostring(ME.PctEndurance()))
+        ImGui.Text(tostring(ME.PctEndurance()or 0))
         ImGui.Separator()
         ImGui.EndGroup()
         if ImGui.IsItemHovered() and ImGui.IsMouseReleased(ImGuiMouseButton.Left) then
@@ -287,7 +302,7 @@ function GUI_Target(open)
             --Aggro % Bar
             if (TARGET.Aggressive) then
                 COLOR.barColor('purple')
-                ImGui.ProgressBar(((tonumber(TARGET.PctAggro() or 0))/100), ImGui.GetContentRegionAvail(), 10, '##'..TARGET.PctAggro())
+                ImGui.ProgressBar(((tonumber(TARGET.PctAggro() or 0))/100), ImGui.GetContentRegionAvail(), 10, '##pctAggro')
                 ImGui.PopStyleColor()
                 --Secondary Aggro Person
                 if (TARGET.SecondaryAggroPlayer()~= nil) then
