@@ -21,7 +21,8 @@ local winFlag = bit32.bor(ImGuiWindowFlags.NoTitleBar, ImGuiWindowFlags.NoScroll
 local pulse = true
 local textureWidth = 20
 local textureHeight = 20
-local ver = 'v0.6'
+local ShowGUI = true
+local ver = 'v1.1'
 local tPlayerFlags = bit32.bor(ImGuiTableFlags.NoBorders,ImGuiTableFlags.NoBordersInBody, ImGuiTableFlags.NoPadInnerX, ImGuiTableFlags.NoPadOuterX,ImGuiTableFlags.Resizable,ImGuiTableFlags.SizingFixedFit)
 local function GetInfoToolTip()
    local pInfoToolTip = ( ME.CleanName()..
@@ -126,6 +127,7 @@ local function getConLevel(spawn)
     return conColor
 end
 function GUI_Target(open)
+    if not ShowGUI then return end
     --Rounded corners
     ImGui.PushStyleVar(ImGuiStyleVar.FrameRounding, 5)
     -- Default window size
@@ -350,6 +352,18 @@ local openGUI = true
 ImGui.Register('GUI_Target', function()
     openGUI = GUI_Target(openGUI)
 end)
-while openGUI do
-    mq.delay(1000)
+local function MainLoop()
+    while true do
+        mq.delay(1000)
+        if ME.Zoning() then
+                ShowGUI = false
+            else
+                ShowGUI = true
+        end
+        if not openGUI then
+            openGUI = ShowGUI
+            GUI_Target(openGUI)
+        end
+    end
 end
+MainLoop()
