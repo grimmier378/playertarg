@@ -22,10 +22,10 @@ local pulse = true
 local textureWidth = 20
 local textureHeight = 20
 local ShowGUI = true
-local ver = 'v1.1'
+local ver = 'v1.3'
 local tPlayerFlags = bit32.bor(ImGuiTableFlags.NoBorders,ImGuiTableFlags.NoBordersInBody, ImGuiTableFlags.NoPadInnerX, ImGuiTableFlags.NoPadOuterX,ImGuiTableFlags.Resizable,ImGuiTableFlags.SizingFixedFit)
 local function GetInfoToolTip()
-   local pInfoToolTip = ( ME.CleanName()..
+   local pInfoToolTip = ( ME.DisplayName()..
     '\t\tlvl: '..tostring(ME.Level())..
     '\nClass: '..ME.Class.Name()..
     '\nHealth: '..tostring(ME.CurrentHPs())..' of '..tostring(ME.MaxHPs())..
@@ -93,6 +93,7 @@ function DrawStatusIcon(iconID, txt)
         ImGui.EndTooltip()
     end
 end
+
 local function targetBuffs(count)
     -- Save the original item spacing
     local originalSpacingX, originalSpacingY = ImGui.GetStyle().ItemSpacing.x, ImGui.GetStyle().ItemSpacing.y
@@ -103,8 +104,9 @@ local function targetBuffs(count)
     local windowWidth = ImGui.GetWindowContentRegionWidth()
     local maxIconsRow = (windowWidth) / (textureWidth)
     ImGui.BeginGroup()
+    if TARGET.BuffCount()~=nil then
     for i = 1, count do
-        local sIcon = TARGET.Buff(i).SpellIcon()
+        local sIcon = TARGET.Buff(i).SpellIcon() or 0
         DrawInspectableSpellIcon(sIcon, TARGET.Buff(i), i)
         iconsDrawn = iconsDrawn + 1
         -- Check if we've reached the max icons for the row, if so reset counter and new line
@@ -119,13 +121,17 @@ local function targetBuffs(count)
             end
         end
     end
+end
     ImGui.EndGroup()
     ImGui.PopStyleVar()
 end
+
+---@param spawn MQSpawn
 local function getConLevel(spawn)
     local conColor = string.lower(spawn.ConColor())
     return conColor
 end
+
 function GUI_Target(open)
     if not ShowGUI then return end
     --Rounded corners
@@ -170,7 +176,7 @@ function GUI_Target(open)
             -- Name
             ImGui.SetWindowFontScale(1)
             ImGui.TableSetColumnIndex(0)
-            local meName = ME.CleanName()
+            local meName = ME.DisplayName()
             ImGui.Text(meName)
             local combatState = mq.TLO.Me.CombatState()
             if combatState=='COMBAT' then
@@ -205,7 +211,10 @@ function GUI_Target(open)
             end
             ImGui.SameLine()
             --  ImGui.SameLine()
-            ImGui.Text('')
+            ImGui.Text('\t')
+            ImGui.SameLine()
+            ImGui.SetWindowFontScale(.75)
+            ImGui.Text(mq.TLO.Me.Heading() or '??')
             ImGui.PopStyleVar()
             -- Lvl
             ImGui.TableSetColumnIndex(3)
@@ -243,7 +252,7 @@ function GUI_Target(open)
             ImGui.SetCursorPosX(ImGui.GetCursorPosX() + ((ImGui.GetWindowWidth()/2)-8))
             ImGui.Text(tostring(ME.PctMana()or 0))
         end
-        --My Endurance barB
+        --My Endurance bar
         COLOR.barColor('yellow')
         ImGui.ProgressBar(((tonumber(ME.PctEndurance() or 0))/100), ImGui.GetContentRegionAvail(), 10, '##pctEndurance')
         ImGui.PopStyleColor()
@@ -292,7 +301,8 @@ function GUI_Target(open)
                 ImGui.TableSetColumnIndex(0) -- Class and Level in the first column
                 local tClass = TARGET.Class.ShortName() == 'UNKNOWN CLASS' and Icons.MD_HELP_OUTLINE or TARGET.Class.ShortName()
                 local tLvl = TARGET.Level() or 0
-                ImGui.Text(tostring(tLvl)..' '..tClass)
+                local tBodyType = TARGET.Body.Name() or ' '
+                ImGui.Text(tostring(tLvl)..' '..tClass..'\t'..tBodyType)
                 -- Aggro% text in the second column
                 ImGui.TableSetColumnIndex(1)
                 ImGui.SetWindowFontScale(1)
@@ -366,4 +376,5 @@ local function MainLoop()
         end
     end
 end
+print('\aw'..mq.TLO.Time()..' [\ayPlayer Targ\aw] ::\ax '..'\a-t Version \aw::\ax \ay'..ver..'\ax\at Loaded\ax')
 MainLoop()
