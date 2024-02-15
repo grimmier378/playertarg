@@ -24,7 +24,7 @@ local textureHeight = 20
 local flashAlpha = 1
 local rise = true
 local ShowGUI = true
-local ver = 'v1.3'
+local ver = 'v1.4'
 local tPlayerFlags = bit32.bor(ImGuiTableFlags.NoBorders, ImGuiTableFlags.NoBordersInBody, ImGuiTableFlags.NoPadInnerX,
     ImGuiTableFlags.NoPadOuterX, ImGuiTableFlags.Resizable, ImGuiTableFlags.SizingFixedFit)
 local function GetInfoToolTip()
