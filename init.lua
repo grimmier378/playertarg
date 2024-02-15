@@ -115,7 +115,7 @@ local function targetBuffs(count)
     local iconsDrawn = 0
     -- Calculate max icons per row based on the window width
     local windowWidth = ImGui.GetWindowContentRegionWidth()
-    local maxIconsRow = (windowWidth) / (textureWidth)
+    local maxIconsRow = math.floor((windowWidth) / (textureWidth + 1))
     if rise == true then
         flashAlpha = flashAlpha + 1
     elseif rise == false then
