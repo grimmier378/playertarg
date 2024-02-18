@@ -93,6 +93,7 @@ function DrawInspectableSpellIcon(iconID, spell, i)
             if TLO.MacroQuest.BuildName()=='Emu' then
                 -- Better than creating our own window just use the game one.
                 mq.cmd("/notify TargetWindow/Target_BuffWindow Buff"..i.." rightmouseheld")
+                mq.cmd("/notify TargetWindow/Target_BuffWindow Buff"..i.." rightmouseheldup")
             -- SpellInfo(spell, i)
             -- SpellInfoWindowOpen = true
             -- SpellInfoWindow_Show = true
