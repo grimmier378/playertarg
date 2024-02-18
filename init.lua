@@ -12,11 +12,13 @@ local mq = require('mq')
 local ImGui = require('ImGui')
 local Icons = require('mq.ICONS')
 local COLOR = require('colors.colors')
+local SPA = require('spa')
 -- set variables
 local anim = mq.FindTextureAnimation('A_SpellIcons')
 local TLO = mq.TLO
 local ME = TLO.Me
 local TARGET = TLO.Target
+local SPELL = TLO.Target.Buff
 local winFlag = bit32.bor(ImGuiWindowFlags.NoTitleBar, ImGuiWindowFlags.NoScrollbar, ImGuiWindowFlags.NoScrollWithMouse)
 local pulse = true
 local textureWidth = 20
@@ -24,9 +26,11 @@ local textureHeight = 20
 local flashAlpha = 1
 local rise = true
 local ShowGUI = true
-local ver = 'v1.4'
+local spellFlags = bit32.bor(ImGuiWindowFlags.NoCollapse)
+local ver = 'v1.5'
 local tPlayerFlags = bit32.bor(ImGuiTableFlags.NoBorders, ImGuiTableFlags.NoBordersInBody, ImGuiTableFlags.NoPadInnerX,
     ImGuiTableFlags.NoPadOuterX, ImGuiTableFlags.Resizable, ImGuiTableFlags.SizingFixedFit)
+
 local function GetInfoToolTip()
     local pInfoToolTip = (ME.DisplayName() ..
         '\t\tlvl: ' .. tostring(ME.Level()) ..
@@ -67,7 +71,8 @@ end
 function DrawInspectableSpellIcon(iconID, spell, i)
     local cursor_x, cursor_y = ImGui.GetCursorPos()
     anim:SetTextureCell(iconID or 0)
-    if spell.Caster() == ME.DisplayName() then
+    local caster = spell.Caster() or '?'
+    if caster == ME.DisplayName() then
         ImGui.DrawTextureAnimation(anim, textureWidth, textureHeight, true)
     else
         ImGui.DrawTextureAnimation(anim, textureWidth, textureHeight)
@@ -84,7 +89,15 @@ function DrawInspectableSpellIcon(iconID, spell, i)
     if ImGui.IsItemHovered() then
         if (ImGui.IsMouseReleased(1)) then
             spell.Inspect()
-            -- print(spell.Name()) -- DEBUG print name to make sure right click is working.
+            -- Inspect doesn't work on EMU. so we create our own window.
+            if TLO.MacroQuest.BuildName()=='Emu' then
+                -- Better than creating our own window just use the game one.
+                mq.cmd("/notify TargetWindow/Target_BuffWindow Buff"..i.." rightmouseheld")
+            -- SpellInfo(spell, i)
+            -- SpellInfoWindowOpen = true
+            -- SpellInfoWindow_Show = true
+            -- -- print(spell.Name()) -- DEBUG print name to make sure right click is working.
+            end
         end
         ImGui.BeginTooltip()
         ImGui.Text(spell.Name() .. '\n' .. getDuration(i))
@@ -92,10 +105,8 @@ function DrawInspectableSpellIcon(iconID, spell, i)
     end
     ImGui.PopID()
 end
-
+--local a = mq.TLO.Window('TargetWindow')()
 ---@param iconID integer
----@param spell MQSpell
----@param i integer
 function DrawStatusIcon(iconID, txt)
     local cursor_x, cursor_y = ImGui.GetCursorPos()
     anim:SetTextureCell(iconID or 0)
@@ -387,6 +398,7 @@ ImGui.Register('GUI_Target', function()
     openGUI = GUI_Target(openGUI)
 end)
 local function MainLoop()
+
     while true do
         mq.delay(1000)
         if ME.Zoning() then
