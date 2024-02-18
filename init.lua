@@ -1,7 +1,7 @@
 --[[
     Title: PlayerTarget
     Author: Grimmier
-    Version:0.6
+
     Description: Combines Player Information window and Target window into one.
     Displays Your player info. as well as Target: Hp, Your aggro, SecondaryAggroPlayer, Visability, Distance,
     and Buffs with name \ duration on tooltip hover.
@@ -132,7 +132,7 @@ local function targetBuffs(count)
     if TARGET.BuffCount() ~= nil then
         for i = 1, count do
             local sIcon = TARGET.Buff(i).SpellIcon() or 0
-            DrawInspectableSpellIcon(sIcon, TARGET.Buff(i), i)
+            if TARGET.Buff(i)~= nil then DrawInspectableSpellIcon(sIcon, TARGET.Buff(i), i) end
             iconsDrawn = iconsDrawn + 1
             -- Check if we've reached the max icons for the row, if so reset counter and new line
             if iconsDrawn >= maxIconsRow then
@@ -173,7 +173,7 @@ function GUI_Target(open)
     if not TLO.Me.Zoning() then
         -- Combat Status
         if ME.Combat() then
-            ImGui.SetItemAllowOverlap()
+            ImGui.SetNextItemAllowOverlap()
             --ImGui.SetCursorPosY(10)
             ImGui.SetCursorPosX((ImGui.GetContentRegionAvail() / 2) - 22)
             if pulse then
