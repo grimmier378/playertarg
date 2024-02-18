@@ -89,15 +89,8 @@ function DrawInspectableSpellIcon(iconID, spell, i)
     if ImGui.IsItemHovered() then
         if (ImGui.IsMouseReleased(1)) then
             spell.Inspect()
-            -- Inspect doesn't work on EMU. so we create our own window.
             if TLO.MacroQuest.BuildName()=='Emu' then
-                -- Better than creating our own window just use the game one.
-                mq.cmd("/notify TargetWindow/Target_BuffWindow Buff"..i.." rightmouseheld")
-                mq.cmd("/notify TargetWindow/Target_BuffWindow Buff"..i.." rightmouseheldup")
-            -- SpellInfo(spell, i)
-            -- SpellInfoWindowOpen = true
-            -- SpellInfoWindow_Show = true
-            -- -- print(spell.Name()) -- DEBUG print name to make sure right click is working.
+                mq.cmd('/nomodkey /altkey /notify TargetWindow Buff'..(i-1)..' leftmouseup')
             end
         end
         ImGui.BeginTooltip()
