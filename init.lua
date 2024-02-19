@@ -78,14 +78,15 @@ function DrawInspectableSpellIcon(iconID, spell, i)
         ImGui.DrawTextureAnimation(anim, textureWidth, textureHeight)
     end
     ImGui.SetCursorPos(cursor_x, cursor_y)
-    ImGui.PushID(tostring(iconID) .. spell.Name() .. "_invis_btn")
-    if spell.Duration.TotalSeconds() < 18 and spell.Duration.TotalSeconds() > 0 then
+    local sName = spell.Name() or '??'
+    local sDur = spell.Duration.TotalSeconds() or 0
+    ImGui.PushID(tostring(iconID) .. sName .. "_invis_btn")
+    if sDur < 18 and sDur > 0 then
         local flashColor = IM_COL32(0, 0, 0, flashAlpha * 2)
         ImGui.GetWindowDrawList():AddRectFilled(ImGui.GetCursorScreenPosVec() + 1,
             ImGui.GetCursorScreenPosVec() + textureHeight, flashColor)
     end
-    ImGui.InvisibleButton(spell.Name(), ImVec2(textureWidth, textureHeight),
-        bit32.bor(ImGuiButtonFlags.MouseButtonRight))
+    ImGui.InvisibleButton(sName, ImVec2(textureWidth, textureHeight), bit32.bor(ImGuiButtonFlags.MouseButtonRight))
     if ImGui.IsItemHovered() then
         if (ImGui.IsMouseReleased(1)) then
             spell.Inspect()
@@ -94,7 +95,7 @@ function DrawInspectableSpellIcon(iconID, spell, i)
             end
         end
         ImGui.BeginTooltip()
-        ImGui.Text(spell.Name() .. '\n' .. getDuration(i))
+        ImGui.Text(sName .. '\n' .. getDuration(i))
         ImGui.EndTooltip()
     end
     ImGui.PopID()
