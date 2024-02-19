@@ -27,7 +27,7 @@ local flashAlpha = 1
 local rise = true
 local ShowGUI = true
 local spellFlags = bit32.bor(ImGuiWindowFlags.NoCollapse)
-local ver = 'v1.5'
+local ver = 'v1.5.2'
 local tPlayerFlags = bit32.bor(ImGuiTableFlags.NoBorders, ImGuiTableFlags.NoBordersInBody, ImGuiTableFlags.NoPadInnerX,
     ImGuiTableFlags.NoPadOuterX, ImGuiTableFlags.Resizable, ImGuiTableFlags.SizingFixedFit)
 
