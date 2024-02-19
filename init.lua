@@ -12,7 +12,7 @@ local mq = require('mq')
 local ImGui = require('ImGui')
 local Icons = require('mq.ICONS')
 local COLOR = require('colors.colors')
-local SPA = require('spa')
+--local SPA = require('spa')
 -- set variables
 local anim = mq.FindTextureAnimation('A_SpellIcons')
 local TLO = mq.TLO
