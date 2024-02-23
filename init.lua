@@ -1,7 +1,6 @@
 --[[
     Title: PlayerTarget
     Author: Grimmier
-
     Description: Combines Player Information window and Target window into one.
     Displays Your player info. as well as Target: Hp, Your aggro, SecondaryAggroPlayer, Visability, Distance,
     and Buffs with name \ duration on tooltip hover.
@@ -12,13 +11,14 @@ local mq = require('mq')
 local ImGui = require('ImGui')
 local Icons = require('mq.ICONS')
 local COLOR = require('colors.colors')
---local SPA = require('spa')
+
 -- set variables
-local anim = mq.FindTextureAnimation('A_SpellIcons')
+local animSpell = mq.FindTextureAnimation('A_SpellIcons')
+local animItem = mq.FindTextureAnimation('A_DragItem')
 local TLO = mq.TLO
 local ME = TLO.Me
 local TARGET = TLO.Target
-local SPELL = TLO.Target.Buff
+local BUFF = TLO.Target.Buff
 local winFlag = bit32.bor(ImGuiWindowFlags.NoTitleBar, ImGuiWindowFlags.NoScrollbar, ImGuiWindowFlags.NoScrollWithMouse)
 local pulse = true
 local textureWidth = 20
@@ -26,8 +26,7 @@ local textureHeight = 20
 local flashAlpha = 1
 local rise = true
 local ShowGUI = true
-local spellFlags = bit32.bor(ImGuiWindowFlags.NoCollapse)
-local ver = 'v1.5.2'
+local ver = "v1.6"
 local tPlayerFlags = bit32.bor(ImGuiTableFlags.NoBorders, ImGuiTableFlags.NoBordersInBody, ImGuiTableFlags.NoPadInnerX,
     ImGuiTableFlags.NoPadOuterX, ImGuiTableFlags.Resizable, ImGuiTableFlags.SizingFixedFit)
 
@@ -41,14 +40,7 @@ local function GetInfoToolTip()
     )
     return pInfoToolTip
 end
-local combatStateActions = {
-    COMBAT = function() DrawStatusIcon(1, 'In Combat') end,
-    DEBUFFED = function() DrawStatusIcon(2, 'Debuffed') end,
-    COOLDOWN = function() DrawStatusIcon(3, 'Cooling Down') end,
-    ACTIVE = function() DrawStatusIcon(4, 'Active') end,
-    RESTING = function() DrawStatusIcon(5, 'Resting') end,
-    NULL = function() DrawStatusIcon(6, 'Unknown') end
-}
+
 local function getDuration(i)
     local remaining = TARGET.Buff(i).Duration() or 0
     remaining = remaining / 1000 -- convert to seconds
@@ -70,12 +62,12 @@ end
 ---@param i integer
 function DrawInspectableSpellIcon(iconID, spell, i)
     local cursor_x, cursor_y = ImGui.GetCursorPos()
-    anim:SetTextureCell(iconID or 0)
+    animSpell:SetTextureCell(iconID or 0)
     local caster = spell.Caster() or '?'
     if caster == ME.DisplayName() then
-        ImGui.DrawTextureAnimation(anim, textureWidth, textureHeight, true)
+        ImGui.DrawTextureAnimation(animSpell, textureWidth, textureHeight, true)
     else
-        ImGui.DrawTextureAnimation(anim, textureWidth, textureHeight)
+        ImGui.DrawTextureAnimation(animSpell, textureWidth, textureHeight)
     end
     ImGui.SetCursorPos(cursor_x, cursor_y)
     local sName = spell.Name() or '??'
@@ -91,7 +83,7 @@ function DrawInspectableSpellIcon(iconID, spell, i)
         if (ImGui.IsMouseReleased(1)) then
             spell.Inspect()
             if TLO.MacroQuest.BuildName()=='Emu' then
-                mq.cmd('/nomodkey /altkey /notify TargetWindow Buff'..(i-1)..' leftmouseup')
+                mq.cmdf("/nomodkey /altkey /notify TargetWindow Buff%s leftmouseup", i-1)
             end
         end
         ImGui.BeginTooltip()
@@ -100,12 +92,14 @@ function DrawInspectableSpellIcon(iconID, spell, i)
     end
     ImGui.PopID()
 end
---local a = mq.TLO.Window('TargetWindow')()
+
 ---@param iconID integer
-function DrawStatusIcon(iconID, txt)
-    local cursor_x, cursor_y = ImGui.GetCursorPos()
-    anim:SetTextureCell(iconID or 0)
-    ImGui.DrawTextureAnimation(anim, textureWidth - 5, textureHeight - 5)
+---@param type string
+---@param txt string
+function DrawStatusIcon(iconID, type, txt)
+    local iconImage = animSpell:SetTextureCell(iconID or 0)
+    if type == 'item' then iconImage = animItem:SetTextureCell(iconID or 0) end
+    ImGui.DrawTextureAnimation(iconImage, textureWidth - 5, textureHeight - 5)
     if ImGui.IsItemHovered() then
         ImGui.BeginTooltip()
         ImGui.Text(txt)
@@ -132,8 +126,8 @@ local function targetBuffs(count)
     ImGui.BeginGroup()
     if TARGET.BuffCount() ~= nil then
         for i = 1, count do
-            local sIcon = TARGET.Buff(i).SpellIcon() or 0
-            if TARGET.Buff(i)~= nil then DrawInspectableSpellIcon(sIcon, TARGET.Buff(i), i) end
+            local sIcon = BUFF(i).SpellIcon() or 0
+            if BUFF(i)~= nil then DrawInspectableSpellIcon(sIcon, BUFF(i), i) end
             iconsDrawn = iconsDrawn + 1
             -- Check if we've reached the max icons for the row, if so reset counter and new line
             if iconsDrawn >= maxIconsRow then
@@ -178,10 +172,10 @@ function GUI_Target(open)
             --ImGui.SetCursorPosY(10)
             ImGui.SetCursorPosX((ImGui.GetContentRegionAvail() / 2) - 22)
             if pulse then
-                COLOR.barColor('pink')
+                ImGui.PushStyleColor(ImGuiCol.PlotHistogram,(COLOR.color('pink')))
                 pulse = false
             else
-                COLOR.barColor('red')
+                ImGui.PushStyleColor(ImGuiCol.PlotHistogram,(COLOR.color('red')))
                 pulse = true
             end
             ImGui.ProgressBar(1, 21, 20, '##c')
@@ -204,10 +198,13 @@ function GUI_Target(open)
             ImGui.TableSetColumnIndex(0)
             local meName = ME.DisplayName()
             ImGui.Text(meName)
-            local combatState = mq.TLO.Me.CombatState()
-            if combatState == 'COMBAT' then
+            local combatState = ME.CombatState()
+            if combatState == 'DEBUFFED' then
                 ImGui.SameLine(ImGui.GetColumnWidth() - 25)
-                DrawStatusIcon(50, 'Combat')
+                DrawStatusIcon(2584, 'item','Debuffed')
+            elseif combatState == 'COMBAT' then
+                ImGui.SameLine(ImGui.GetColumnWidth() - 25)
+                DrawStatusIcon(50,'spell','Combat')
             end
             -- Visiblity
             ImGui.TableSetColumnIndex(1)
@@ -229,41 +226,52 @@ function GUI_Target(open)
             ImGui.Text('')
             if TLO.Group.MainTank.ID() == ME.ID() then
                 ImGui.SameLine()
-                DrawStatusIcon(46, 'Main Tank')
+                DrawStatusIcon(46, 'spell','Main Tank')
             end
             if TLO.Group.MainAssist.ID() == ME.ID() then
                 ImGui.SameLine()
-                DrawStatusIcon(49, 'Main Assist')
+                DrawStatusIcon(49,'spell','Main Assist')
+            end
+            if TLO.Group.Puller.ID() == ME.ID() then
+                ImGui.SameLine()
+                DrawStatusIcon(3518, 'item','Puller')
             end
             ImGui.SameLine()
             --  ImGui.SameLine()
             ImGui.Text('\t')
             ImGui.SameLine()
             ImGui.SetWindowFontScale(.75)
-            ImGui.Text(mq.TLO.Me.Heading() or '??')
+            ImGui.Text(ME.Heading() or '??')
             ImGui.PopStyleVar()
             -- Lvl
             ImGui.TableSetColumnIndex(3)
             ImGui.PushStyleVar(ImGuiStyleVar.ItemSpacing, 2, 0)
             ImGui.SetWindowFontScale(1)
             ImGui.Text(tostring(ME.Level() or 0))
-            -- ImGui.Text(tostring('125'))
             if ImGui.IsItemHovered() then
                 ImGui.BeginTooltip()
                 ImGui.Text(GetInfoToolTip())
                 ImGui.EndTooltip()
             end
-            -- ImGui.SameLine()
-            -- ImGui.SetWindowFontScale(.75)
-            -- ImGui.Text(ME.Class.ShortName())
-            --ImGui.Text('UNK')
             ImGui.PopStyleVar()
             ImGui.EndTable()
         end
         ImGui.Separator()
         -- My Health Bar
         ImGui.SetWindowFontScale(0.75)
-        COLOR.barColor('red')
+        if ME.PctHPs() <= 0 then
+            ImGui.PushStyleColor(ImGuiCol.PlotHistogram,(COLOR.color('purple')))
+        elseif ME.PctHPs() < 15 then
+            if pulse then
+                ImGui.PushStyleColor(ImGuiCol.PlotHistogram,(COLOR.color('orange')))
+                if not ME.CombatState() == 'COMBAT' then pulse = false end
+            else
+                ImGui.PushStyleColor(ImGuiCol.PlotHistogram,(COLOR.color('red')))
+                if not ME.CombatState() == 'COMBAT' then pulse = true end
+            end
+        else
+            ImGui.PushStyleColor(ImGuiCol.PlotHistogram,(COLOR.color('red')))
+        end
         ImGui.ProgressBar(((tonumber(ME.PctHPs() or 0)) / 100), ImGui.GetContentRegionAvail(), 10, '##pctHps')
         ImGui.PopStyleColor()
         ImGui.SetCursorPosY(ImGui.GetCursorPosY() - 15)
@@ -271,7 +279,7 @@ function GUI_Target(open)
         ImGui.Text(tostring(ME.PctHPs() or 0))
         --My Mana Bar
         if (tonumber(ME.MaxMana()) > 0) then
-            COLOR.barColor('blue')
+            ImGui.PushStyleColor(ImGuiCol.PlotHistogram,(COLOR.color('blue')))
             ImGui.ProgressBar(((tonumber(ME.PctMana() or 0)) / 100), ImGui.GetContentRegionAvail(), 10, '##pctMana')
             ImGui.PopStyleColor()
             ImGui.SetCursorPosY(ImGui.GetCursorPosY() - 15)
@@ -279,7 +287,7 @@ function GUI_Target(open)
             ImGui.Text(tostring(ME.PctMana() or 0))
         end
         --My Endurance bar
-        COLOR.barColor('yellow')
+        ImGui.PushStyleColor(ImGuiCol.PlotHistogram,(COLOR.color('yellow2')))
         ImGui.ProgressBar(((tonumber(ME.PctEndurance() or 0)) / 100), ImGui.GetContentRegionAvail(), 10, '##pctEndurance')
         ImGui.PopStyleColor()
         ImGui.SetCursorPosY(ImGui.GetCursorPosY() - 15)
@@ -288,12 +296,16 @@ function GUI_Target(open)
         ImGui.Separator()
         ImGui.EndGroup()
         if ImGui.IsItemHovered() and ImGui.IsMouseReleased(ImGuiMouseButton.Left) then
-            mq.cmd('/target  ${Me}')
+            mq.cmdf("/target %s", ME())
         end
         --Target Info
         if (TARGET() ~= nil) then
             --Target Health Bar
-            COLOR.barColor('red')
+            if TARGET.PctHPs() < 25 then
+                ImGui.PushStyleColor(ImGuiCol.PlotHistogram,(COLOR.color('orange')))
+            else
+                ImGui.PushStyleColor(ImGuiCol.PlotHistogram,(COLOR.color('red')))
+            end
             ImGui.ProgressBar(((tonumber(TARGET.PctHPs() or 0)) / 100), ImGui.GetContentRegionAvail(), 30,
                 '##' .. TARGET.PctHPs())
             ImGui.PopStyleColor()
@@ -312,7 +324,7 @@ function GUI_Target(open)
                 -- Distance in the second column
                 ImGui.TableSetColumnIndex(1)
                 local tC = getConLevel(TARGET)
-                COLOR.txtColor(tC)
+                ImGui.PushStyleColor(ImGuiCol.Text,COLOR.color(tC))
                 if tC == 'red' then
                     ImGui.Text('   ' .. Icons.MD_WARNING)
                 else
@@ -320,7 +332,7 @@ function GUI_Target(open)
                 end
                 ImGui.PopStyleColor()
                 ImGui.SameLine(ImGui.GetColumnWidth() - 35)
-                COLOR.txtColor('yellow')
+                ImGui.PushStyleColor(ImGuiCol.Text,COLOR.color('yellow'))
                 ImGui.Text(tostring(math.floor(TARGET.Distance() or 0)) .. 'm')
                 ImGui.PopStyleColor()
                 -- Second Row: Class, Level, and Aggro%
@@ -341,7 +353,11 @@ function GUI_Target(open)
             ImGui.Separator()
             --Aggro % Bar
             if (TARGET.Aggressive) then
-                COLOR.barColor('purple')
+                if TARGET.PctAggro() < 100 then 
+                    ImGui.PushStyleColor(ImGuiCol.PlotHistogram,(COLOR.color('orange')))
+                else
+                    ImGui.PushStyleColor(ImGuiCol.PlotHistogram,(COLOR.color('purple')))
+                end                
                 ImGui.ProgressBar(((tonumber(TARGET.PctAggro() or 0)) / 100), ImGui.GetContentRegionAvail(), 10,
                     '##pctAggro')
                 ImGui.PopStyleColor()
@@ -392,8 +408,8 @@ local openGUI = true
 ImGui.Register('GUI_Target', function()
     openGUI = GUI_Target(openGUI)
 end)
-local function MainLoop()
 
+local function MainLoop()
     while true do
         mq.delay(1000)
         if ME.Zoning() then
@@ -407,5 +423,6 @@ local function MainLoop()
         end
     end
 end
-print('\aw' .. mq.TLO.Time() .. ' [\ayPlayer Targ\aw] ::\ax ' .. '\a-t Version \aw::\ax \ay' .. ver .. '\ax\at Loaded\ax')
+
+printf("\ag %s \aw[\ayPlayer Targ\aw] ::\a-t Version \aw::\ay %s \at Loaded",TLO.Time(), ver)
 MainLoop()
