@@ -76,14 +76,14 @@ function DrawInspectableSpellIcon(iconID, spell, i)
     else
         ImGui.DrawTextureAnimation(animSpell, textureWidth+1, textureHeight+1)
     end
-    ImGui.SetCursorPos(cursor_x+2, cursor_y)
+    ImGui.SetCursorPos(cursor_x+1, cursor_y+1)
     local sName = spell.Name() or '??'
     local sDur = spell.Duration.TotalSeconds() or 0
     ImGui.PushID(tostring(iconID) .. sName .. "_invis_btn")
     if sDur < 18 and sDur > 0 then
         local flashColor = IM_COL32(0, 0, 0, flashAlpha * 2)
-        ImGui.GetWindowDrawList():AddRectFilled(ImGui.GetCursorScreenPosVec() +2,
-            ImGui.GetCursorScreenPosVec() + textureHeight + 5, flashColor)
+        ImGui.GetWindowDrawList():AddRectFilled(ImGui.GetCursorScreenPosVec() +1,
+            ImGui.GetCursorScreenPosVec() + textureHeight + 4, flashColor)
     end 
     ImGui.SetCursorPos(cursor_x, cursor_y)
     ImGui.InvisibleButton(sName, ImVec2(textureWidth+6, textureHeight+6), bit32.bor(ImGuiButtonFlags.MouseButtonRight))
