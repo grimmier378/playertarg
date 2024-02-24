@@ -62,23 +62,31 @@ end
 ---@param i integer
 function DrawInspectableSpellIcon(iconID, spell, i)
     local cursor_x, cursor_y = ImGui.GetCursorPos()
+    local beniColor = IM_COL32(0,20,180,255)
     animSpell:SetTextureCell(iconID or 0)
     local caster = spell.Caster() or '?'
+    if not spell.Beneficial() then 
+        beniColor = IM_COL32(255,0,0,255)
+    end
+    ImGui.GetWindowDrawList():AddRectFilled(ImGui.GetCursorScreenPosVec() + 1,
+            ImGui.GetCursorScreenPosVec() + textureHeight +6, beniColor)
+    ImGui.SetCursorPos(cursor_x+3, cursor_y+3)
     if caster == ME.DisplayName() then
         ImGui.DrawTextureAnimation(animSpell, textureWidth, textureHeight, true)
     else
         ImGui.DrawTextureAnimation(animSpell, textureWidth, textureHeight)
     end
-    ImGui.SetCursorPos(cursor_x, cursor_y)
+    ImGui.SetCursorPos(cursor_x+2, cursor_y)
     local sName = spell.Name() or '??'
     local sDur = spell.Duration.TotalSeconds() or 0
     ImGui.PushID(tostring(iconID) .. sName .. "_invis_btn")
     if sDur < 18 and sDur > 0 then
         local flashColor = IM_COL32(0, 0, 0, flashAlpha * 2)
-        ImGui.GetWindowDrawList():AddRectFilled(ImGui.GetCursorScreenPosVec() + 1,
+        ImGui.GetWindowDrawList():AddRectFilled(ImGui.GetCursorScreenPosVec() +1,
             ImGui.GetCursorScreenPosVec() + textureHeight, flashColor)
-    end
-    ImGui.InvisibleButton(sName, ImVec2(textureWidth, textureHeight), bit32.bor(ImGuiButtonFlags.MouseButtonRight))
+    end 
+    ImGui.SetCursorPos(cursor_x, cursor_y)
+    ImGui.InvisibleButton(sName, ImVec2(textureWidth+6, textureHeight+6), bit32.bor(ImGuiButtonFlags.MouseButtonRight))
     if ImGui.IsItemHovered() then
         if (ImGui.IsMouseReleased(1)) then
             spell.Inspect()
@@ -110,12 +118,12 @@ end
 local function targetBuffs(count)
     -- Save the original item spacing
     local originalSpacingX, originalSpacingY = ImGui.GetStyle().ItemSpacing.x, ImGui.GetStyle().ItemSpacing.y
-    ImGui.PushStyleVar(ImGuiStyleVar.ItemSpacing, 2, 2)
+    ImGui.PushStyleVar(ImGuiStyleVar.ItemSpacing, 1, 1)
     -- Width and height of each texture
     local iconsDrawn = 0
     -- Calculate max icons per row based on the window width
     local windowWidth = ImGui.GetWindowContentRegionWidth()
-    local maxIconsRow = math.floor((windowWidth) / (textureWidth + 1))
+    local maxIconsRow = math.floor((windowWidth) / (textureWidth + 6))
     if rise == true then
         flashAlpha = flashAlpha + 1
     elseif rise == false then
