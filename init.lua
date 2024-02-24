@@ -209,10 +209,15 @@ function GUI_Target(open)
             local meName = ME.DisplayName()
             ImGui.Text(meName)
             local combatState = ME.CombatState()
-            if combatState == 'DEBUFFED' then
-                ImGui.SameLine(ImGui.GetColumnWidth() - 25)
-                DrawStatusIcon(2584,'item','Debuffed')
-            elseif combatState == 'COMBAT' then
+            if ME.Poisoned() then 
+                ImGui.SameLine(ImGui.GetColumnWidth() - 65)
+                DrawStatusIcon(42,'spell','Posioned')
+            end
+            if ME.Diseased() then
+                ImGui.SameLine(ImGui.GetColumnWidth() - 45)
+                DrawStatusIcon(41,'spell','Diseased')
+            end
+            if combatState == 'COMBAT' then
                 ImGui.SameLine(ImGui.GetColumnWidth() - 25)
                 DrawStatusIcon(50,'spell','Combat')
             end
