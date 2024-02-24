@@ -62,12 +62,19 @@ end
 ---@param i integer
 function DrawInspectableSpellIcon(iconID, spell, i)
     local cursor_x, cursor_y = ImGui.GetCursorPos()
+    local beniColor = IM_COL32(0,20,180,190)
     animSpell:SetTextureCell(iconID or 0)
     local caster = spell.Caster() or '?'
+    if not spell.Beneficial() then 
+        beniColor = IM_COL32(255,0,0,190)
+    end
+    ImGui.GetWindowDrawList():AddRectFilled(ImGui.GetCursorScreenPosVec() + 1,
+            ImGui.GetCursorScreenPosVec() + textureHeight +6, beniColor)
+    ImGui.SetCursorPos(cursor_x+3, cursor_y+3)
     if caster == ME.DisplayName() then
         ImGui.DrawTextureAnimation(animSpell, textureWidth, textureHeight, true)
     else
-        ImGui.DrawTextureAnimation(animSpell, textureWidth, textureHeight)
+        ImGui.DrawTextureAnimation(animSpell, textureWidth+1, textureHeight+1)
     end
     ImGui.SetCursorPos(cursor_x, cursor_y)
     local sName = spell.Name() or '??'
@@ -75,10 +82,11 @@ function DrawInspectableSpellIcon(iconID, spell, i)
     ImGui.PushID(tostring(iconID) .. sName .. "_invis_btn")
     if sDur < 18 and sDur > 0 then
         local flashColor = IM_COL32(0, 0, 0, flashAlpha * 2)
-        ImGui.GetWindowDrawList():AddRectFilled(ImGui.GetCursorScreenPosVec() + 1,
-            ImGui.GetCursorScreenPosVec() + textureHeight, flashColor)
-    end
-    ImGui.InvisibleButton(sName, ImVec2(textureWidth, textureHeight), bit32.bor(ImGuiButtonFlags.MouseButtonRight))
+        ImGui.GetWindowDrawList():AddRectFilled(ImGui.GetCursorScreenPosVec() +2,
+            ImGui.GetCursorScreenPosVec() + textureHeight + 5, flashColor)
+    end 
+    ImGui.SetCursorPos(cursor_x, cursor_y)
+    ImGui.InvisibleButton(sName, ImVec2(textureWidth+6, textureHeight+6), bit32.bor(ImGuiButtonFlags.MouseButtonRight))
     if ImGui.IsItemHovered() then
         if (ImGui.IsMouseReleased(1)) then
             spell.Inspect()
@@ -97,25 +105,29 @@ end
 ---@param type string
 ---@param txt string
 function DrawStatusIcon(iconID, type, txt)
-    local iconImage = animSpell:SetTextureCell(iconID or 0)
-    if type == 'item' then iconImage = animItem:SetTextureCell(iconID or 0) end
-    ImGui.DrawTextureAnimation(iconImage, textureWidth - 5, textureHeight - 5)
-    if ImGui.IsItemHovered() then
-        ImGui.BeginTooltip()
-        ImGui.Text(txt)
-        ImGui.EndTooltip()
+    animSpell:SetTextureCell(iconID or 0)
+    animItem:SetTextureCell(iconID or 3996)
+    if type == 'item' then
+        ImGui.DrawTextureAnimation(animItem, textureWidth - 5, textureHeight - 5)
+    else
+        ImGui.DrawTextureAnimation(animSpell, textureWidth - 5, textureHeight - 5)
     end
+        if ImGui.IsItemHovered() then
+            ImGui.BeginTooltip()
+            ImGui.Text(txt)
+            ImGui.EndTooltip()
+        end
 end
 
 local function targetBuffs(count)
     -- Save the original item spacing
     local originalSpacingX, originalSpacingY = ImGui.GetStyle().ItemSpacing.x, ImGui.GetStyle().ItemSpacing.y
-    ImGui.PushStyleVar(ImGuiStyleVar.ItemSpacing, 2, 2)
+    ImGui.PushStyleVar(ImGuiStyleVar.ItemSpacing, 1, 1)
     -- Width and height of each texture
     local iconsDrawn = 0
     -- Calculate max icons per row based on the window width
     local windowWidth = ImGui.GetWindowContentRegionWidth()
-    local maxIconsRow = math.floor((windowWidth) / (textureWidth + 1))
+    local maxIconsRow = math.floor((windowWidth) / (textureWidth + 6))
     if rise == true then
         flashAlpha = flashAlpha + 1
     elseif rise == false then
@@ -201,7 +213,7 @@ function GUI_Target(open)
             local combatState = ME.CombatState()
             if combatState == 'DEBUFFED' then
                 ImGui.SameLine(ImGui.GetColumnWidth() - 25)
-                DrawStatusIcon(2584, 'item','Debuffed')
+                DrawStatusIcon(2584,'item','Debuffed')
             elseif combatState == 'COMBAT' then
                 ImGui.SameLine(ImGui.GetColumnWidth() - 25)
                 DrawStatusIcon(50,'spell','Combat')
@@ -226,7 +238,7 @@ function GUI_Target(open)
             ImGui.Text('')
             if TLO.Group.MainTank.ID() == ME.ID() then
                 ImGui.SameLine()
-                DrawStatusIcon(46, 'spell','Main Tank')
+                DrawStatusIcon(46,'spell','Main Tank')
             end
             if TLO.Group.MainAssist.ID() == ME.ID() then
                 ImGui.SameLine()
@@ -234,7 +246,7 @@ function GUI_Target(open)
             end
             if TLO.Group.Puller.ID() == ME.ID() then
                 ImGui.SameLine()
-                DrawStatusIcon(3518, 'item','Puller')
+                DrawStatusIcon(3518,'item','Puller')
             end
             ImGui.SameLine()
             --  ImGui.SameLine()
