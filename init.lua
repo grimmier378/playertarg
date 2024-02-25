@@ -26,7 +26,7 @@ local textureHeight = 26
 local flashAlpha = 1
 local rise = true
 local ShowGUI = true
-local ver = "v1.6"
+local ver = "v1.6.1"
 local tPlayerFlags = bit32.bor(ImGuiTableFlags.NoBorders, ImGuiTableFlags.NoBordersInBody, ImGuiTableFlags.NoPadInnerX,
     ImGuiTableFlags.NoPadOuterX, ImGuiTableFlags.Resizable, ImGuiTableFlags.SizingFixedFit)
 
@@ -101,7 +101,6 @@ function DrawInspectableSpellIcon(iconID, spell, i)
     ImGui.PopID()
 end
 
----@param iconID integer
 ---@param type string
 ---@param txt string
 function DrawStatusIcon(iconID, type, txt)
@@ -109,6 +108,10 @@ function DrawStatusIcon(iconID, type, txt)
     animItem:SetTextureCell(iconID or 3996)
     if type == 'item' then
         ImGui.DrawTextureAnimation(animItem, textureWidth - 11, textureHeight - 11)
+    elseif type == 'pwcs' then
+        local animPWCS = mq.FindTextureAnimation(iconID)
+        animPWCS:SetTextureCell(iconID)
+        ImGui.DrawTextureAnimation(animPWCS, textureWidth - 11, textureHeight - 11)
     else
         ImGui.DrawTextureAnimation(animSpell, textureWidth - 11, textureHeight - 11)
     end
@@ -217,9 +220,19 @@ function GUI_Target(open)
                 ImGui.SameLine(ImGui.GetColumnWidth() - 45)
                 DrawStatusIcon(41,'spell','Diseased')
             end
-            if combatState == 'COMBAT' then
-                ImGui.SameLine(ImGui.GetColumnWidth() - 25)
-                DrawStatusIcon(50,'spell','Combat')
+            ImGui.SameLine(ImGui.GetColumnWidth() - 25)
+            if combatState == 'DEBUFFED' then                
+                DrawStatusIcon('A_PWCSDebuff','pwcs','You are Debuffed and need a cure before resting.')
+            elseif combatState == 'ACTIVE' then
+                DrawStatusIcon('A_PWCSStanding','pwcs','You are not in combat and may rest at any time.')
+            elseif combatState == 'COOLDOWN' then
+                DrawStatusIcon('A_PWCSTimer','pwcs','You are recovering from combat and can not reset yet')
+            elseif combatState == 'RESTING' then
+                DrawStatusIcon('A_PWCSRegen','pwcs','You are Resting.')
+            elseif combatState == 'COMBAT' then
+                DrawStatusIcon('A_PWCSInCombat','pwcs','You are in Combat.')
+            else
+                DrawStatusIcon(3996,'item',' ')
             end
             -- Visiblity
             ImGui.TableSetColumnIndex(1)
@@ -241,15 +254,15 @@ function GUI_Target(open)
             ImGui.Text('')
             if TLO.Group.MainTank.ID() == ME.ID() then
                 ImGui.SameLine()
-                DrawStatusIcon(46,'spell','Main Tank')
+                DrawStatusIcon('A_Tank','pwcs','Main Tank')
             end
             if TLO.Group.MainAssist.ID() == ME.ID() then
                 ImGui.SameLine()
-                DrawStatusIcon(49,'spell','Main Assist')
+                DrawStatusIcon('A_Assist','pwcs','Main Assist')
             end
             if TLO.Group.Puller.ID() == ME.ID() then
                 ImGui.SameLine()
-                DrawStatusIcon(3518,'item','Puller')
+                DrawStatusIcon('A_Puller','pwcs','Puller')
             end
             ImGui.SameLine()
             --  ImGui.SameLine()
