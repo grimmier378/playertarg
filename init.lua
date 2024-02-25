@@ -21,12 +21,12 @@ local TARGET = TLO.Target
 local BUFF = TLO.Target.Buff
 local winFlag = bit32.bor(ImGuiWindowFlags.NoTitleBar, ImGuiWindowFlags.NoScrollbar, ImGuiWindowFlags.NoScrollWithMouse)
 local pulse = true
-local textureWidth = 20
-local textureHeight = 20
+local textureWidth = 26
+local textureHeight = 26
 local flashAlpha = 1
 local rise = true
 local ShowGUI = true
-local ver = "v1.6"
+local ver = "v1.6.1"
 local tPlayerFlags = bit32.bor(ImGuiTableFlags.NoBorders, ImGuiTableFlags.NoBordersInBody, ImGuiTableFlags.NoPadInnerX,
     ImGuiTableFlags.NoPadOuterX, ImGuiTableFlags.Resizable, ImGuiTableFlags.SizingFixedFit)
 
@@ -69,12 +69,12 @@ function DrawInspectableSpellIcon(iconID, spell, i)
         beniColor = IM_COL32(255,0,0,190)
     end
     ImGui.GetWindowDrawList():AddRectFilled(ImGui.GetCursorScreenPosVec() + 1,
-            ImGui.GetCursorScreenPosVec() + textureHeight +6, beniColor)
+            ImGui.GetCursorScreenPosVec() + textureHeight, beniColor)
     ImGui.SetCursorPos(cursor_x+3, cursor_y+3)
     if caster == ME.DisplayName() then
-        ImGui.DrawTextureAnimation(animSpell, textureWidth, textureHeight, true)
+        ImGui.DrawTextureAnimation(animSpell, textureWidth - 6, textureHeight -6, true)
     else
-        ImGui.DrawTextureAnimation(animSpell, textureWidth+1, textureHeight+1)
+        ImGui.DrawTextureAnimation(animSpell, textureWidth - 5, textureHeight - 5)
     end
     ImGui.SetCursorPos(cursor_x+1, cursor_y+1)
     local sName = spell.Name() or '??'
@@ -83,10 +83,10 @@ function DrawInspectableSpellIcon(iconID, spell, i)
     if sDur < 18 and sDur > 0 then
         local flashColor = IM_COL32(0, 0, 0, flashAlpha * 2)
         ImGui.GetWindowDrawList():AddRectFilled(ImGui.GetCursorScreenPosVec() +1,
-            ImGui.GetCursorScreenPosVec() + textureHeight + 4, flashColor)
+            ImGui.GetCursorScreenPosVec() + textureHeight -2, flashColor)
     end 
     ImGui.SetCursorPos(cursor_x, cursor_y)
-    ImGui.InvisibleButton(sName, ImVec2(textureWidth+6, textureHeight+6), bit32.bor(ImGuiButtonFlags.MouseButtonRight))
+    ImGui.InvisibleButton(sName, ImVec2(textureWidth, textureHeight), bit32.bor(ImGuiButtonFlags.MouseButtonRight))
     if ImGui.IsItemHovered() then
         if (ImGui.IsMouseReleased(1)) then
             spell.Inspect()
@@ -101,16 +101,19 @@ function DrawInspectableSpellIcon(iconID, spell, i)
     ImGui.PopID()
 end
 
----@param iconID integer
 ---@param type string
 ---@param txt string
 function DrawStatusIcon(iconID, type, txt)
     animSpell:SetTextureCell(iconID or 0)
     animItem:SetTextureCell(iconID or 3996)
     if type == 'item' then
-        ImGui.DrawTextureAnimation(animItem, textureWidth - 5, textureHeight - 5)
+        ImGui.DrawTextureAnimation(animItem, textureWidth - 11, textureHeight - 11)
+    elseif type == 'pwcs' then
+        local animPWCS = mq.FindTextureAnimation(iconID)
+        animPWCS:SetTextureCell(iconID)
+        ImGui.DrawTextureAnimation(animPWCS, textureWidth - 11, textureHeight - 11)
     else
-        ImGui.DrawTextureAnimation(animSpell, textureWidth - 5, textureHeight - 5)
+        ImGui.DrawTextureAnimation(animSpell, textureWidth - 11, textureHeight - 11)
     end
         if ImGui.IsItemHovered() then
             ImGui.BeginTooltip()
@@ -120,14 +123,11 @@ function DrawStatusIcon(iconID, type, txt)
 end
 
 local function targetBuffs(count)
-    -- Save the original item spacing
-    local originalSpacingX, originalSpacingY = ImGui.GetStyle().ItemSpacing.x, ImGui.GetStyle().ItemSpacing.y
-    ImGui.PushStyleVar(ImGuiStyleVar.ItemSpacing, 1, 1)
-    -- Width and height of each texture
     local iconsDrawn = 0
-    -- Calculate max icons per row based on the window width
+    -- Width and height of each texture
     local windowWidth = ImGui.GetWindowContentRegionWidth()
-    local maxIconsRow = math.floor((windowWidth) / (textureWidth + 6))
+    -- Calculate max icons per row based on the window width
+    local maxIconsRow = (windowWidth / textureWidth) - 0.75
     if rise == true then
         flashAlpha = flashAlpha + 1
     elseif rise == false then
@@ -136,6 +136,7 @@ local function targetBuffs(count)
     if flashAlpha == 128 then rise = false end
     if flashAlpha == 25 then rise = true end
     ImGui.BeginGroup()
+    ImGui.PushStyleVar(ImGuiStyleVar.ItemSpacing, 0, 0)
     if TARGET.BuffCount() ~= nil then
         for i = 1, count do
             local sIcon = BUFF(i).SpellIcon() or 0
@@ -154,8 +155,8 @@ local function targetBuffs(count)
             end
         end
     end
-    ImGui.EndGroup()
     ImGui.PopStyleVar()
+    ImGui.EndGroup()
 end
 
 ---@param spawn MQSpawn
@@ -202,7 +203,7 @@ function GUI_Target(open)
         if ImGui.BeginTable("##playerInfo", 4, tPlayerFlags) then
             ImGui.TableSetupColumn("##tName", ImGuiTableColumnFlags.NoResize, (ImGui.GetContentRegionAvail() * .5))
             ImGui.TableSetupColumn("##tVis", ImGuiTableColumnFlags.NoResize, 16)
-            ImGui.TableSetupColumn("##tIcons", ImGuiTableColumnFlags.WidthStretch, 60) --ImGui.GetContentRegionAvail()*.25)
+            ImGui.TableSetupColumn("##tIcons", ImGuiTableColumnFlags.WidthStretch, 80) --ImGui.GetContentRegionAvail()*.25)
             ImGui.TableSetupColumn("##tLvl", ImGuiTableColumnFlags.NoResize, 30)
             ImGui.TableNextRow()
             -- Name
@@ -211,12 +212,27 @@ function GUI_Target(open)
             local meName = ME.DisplayName()
             ImGui.Text(meName)
             local combatState = ME.CombatState()
-            if combatState == 'DEBUFFED' then
-                ImGui.SameLine(ImGui.GetColumnWidth() - 25)
-                DrawStatusIcon(2584,'item','Debuffed')
+            if ME.Poisoned() then 
+                ImGui.SameLine(ImGui.GetColumnWidth() - 65)
+                DrawStatusIcon(42,'spell','Posioned')
+            end
+            if ME.Diseased() then
+                ImGui.SameLine(ImGui.GetColumnWidth() - 45)
+                DrawStatusIcon(41,'spell','Diseased')
+            end
+            ImGui.SameLine(ImGui.GetColumnWidth() - 25)
+            if combatState == 'DEBUFFED' then                
+                DrawStatusIcon('A_PWCSDebuff','pwcs','You are Debuffed and need a cure before resting.')
+            elseif combatState == 'ACTIVE' then
+                DrawStatusIcon('A_PWCSStanding','pwcs','You are not in combat and may rest at any time.')
+            elseif combatState == 'COOLDOWN' then
+                DrawStatusIcon('A_PWCSTimer','pwcs','You are recovering from combat and can not reset yet')
+            elseif combatState == 'RESTING' then
+                DrawStatusIcon('A_PWCSRegen','pwcs','You are Resting.')
             elseif combatState == 'COMBAT' then
-                ImGui.SameLine(ImGui.GetColumnWidth() - 25)
-                DrawStatusIcon(50,'spell','Combat')
+                DrawStatusIcon('A_PWCSInCombat','pwcs','You are in Combat.')
+            else
+                DrawStatusIcon(3996,'item',' ')
             end
             -- Visiblity
             ImGui.TableSetColumnIndex(1)
@@ -238,19 +254,19 @@ function GUI_Target(open)
             ImGui.Text('')
             if TLO.Group.MainTank.ID() == ME.ID() then
                 ImGui.SameLine()
-                DrawStatusIcon(46,'spell','Main Tank')
+                DrawStatusIcon('A_Tank','pwcs','Main Tank')
             end
             if TLO.Group.MainAssist.ID() == ME.ID() then
                 ImGui.SameLine()
-                DrawStatusIcon(49,'spell','Main Assist')
+                DrawStatusIcon('A_Assist','pwcs','Main Assist')
             end
             if TLO.Group.Puller.ID() == ME.ID() then
                 ImGui.SameLine()
-                DrawStatusIcon(3518,'item','Puller')
+                DrawStatusIcon('A_Puller','pwcs','Puller')
             end
             ImGui.SameLine()
             --  ImGui.SameLine()
-            ImGui.Text('\t')
+            ImGui.Text(' ')
             ImGui.SameLine()
             ImGui.SetWindowFontScale(.75)
             ImGui.Text(ME.Heading() or '??')
@@ -391,16 +407,14 @@ function GUI_Target(open)
             else
                 ImGui.Text('')
             end
-            ImGui.Separator()
             --Target Buffs
             if tonumber(TARGET.BuffCount()) > 0 then
                 local windowWidth, windowHeight = ImGui.GetContentRegionAvail()
                 -- Begin a scrollable child
-                ImGui.BeginChild("TargetBuffsScrollRegion", ImVec2(windowWidth, windowHeight), true)
+                ImGui.BeginChild("TargetBuffsScrollRegion", ImVec2(windowWidth, windowHeight),ImGuiChildFlags.Border)
                 targetBuffs(tonumber(TARGET.BuffCount()))
                 ImGui.EndChild()
                 -- End the scrollable region
-                ImGui.Separator()
             end
         else
             ImGui.Text('')
