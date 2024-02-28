@@ -62,28 +62,31 @@ end
 ---@param i integer
 function DrawInspectableSpellIcon(iconID, spell, i)
     local cursor_x, cursor_y = ImGui.GetCursorPos()
-    local beniColor = IM_COL32(0,20,180,190)
+    local beniColor = IM_COL32(0,20,180,190) -- blue benificial default color
     animSpell:SetTextureCell(iconID or 0)
     local caster = spell.Caster() or '?'
     if not spell.Beneficial() then 
-        beniColor = IM_COL32(255,0,0,190)
+        beniColor = IM_COL32(255,0,0,190) --red detrimental
+    end
+    if caster == ME.DisplayName() and not spell.Beneficial() then
+        beniColor = IM_COL32(190,190,20,255) -- detrimental cast by me (yellow)
     end
     ImGui.GetWindowDrawList():AddRectFilled(ImGui.GetCursorScreenPosVec() + 1,
-            ImGui.GetCursorScreenPosVec() + textureHeight, beniColor)
+        ImGui.GetCursorScreenPosVec() + textureHeight, beniColor)
     ImGui.SetCursorPos(cursor_x+3, cursor_y+3)
-    if caster == ME.DisplayName() then
+    if caster == ME.DisplayName() and spell.Beneficial() then
         ImGui.DrawTextureAnimation(animSpell, textureWidth - 6, textureHeight -6, true)
     else
         ImGui.DrawTextureAnimation(animSpell, textureWidth - 5, textureHeight - 5)
     end
-    ImGui.SetCursorPos(cursor_x+1, cursor_y+1)
+    ImGui.SetCursorPos(cursor_x+2, cursor_y+2)
     local sName = spell.Name() or '??'
     local sDur = spell.Duration.TotalSeconds() or 0
     ImGui.PushID(tostring(iconID) .. sName .. "_invis_btn")
     if sDur < 18 and sDur > 0 then
-        local flashColor = IM_COL32(0, 0, 0, flashAlpha * 2)
+        local flashColor = IM_COL32(0, 0, 0, flashAlpha)
         ImGui.GetWindowDrawList():AddRectFilled(ImGui.GetCursorScreenPosVec() +1,
-            ImGui.GetCursorScreenPosVec() + textureHeight -2, flashColor)
+            ImGui.GetCursorScreenPosVec() + textureHeight -4, flashColor)
     end 
     ImGui.SetCursorPos(cursor_x, cursor_y)
     ImGui.InvisibleButton(sName, ImVec2(textureWidth, textureHeight), bit32.bor(ImGuiButtonFlags.MouseButtonRight))
@@ -129,9 +132,9 @@ local function targetBuffs(count)
     -- Calculate max icons per row based on the window width
     local maxIconsRow = (windowWidth / textureWidth) - 0.75
     if rise == true then
-        flashAlpha = flashAlpha + 1
+        flashAlpha = flashAlpha + 5
     elseif rise == false then
-        flashAlpha = flashAlpha - 1
+        flashAlpha = flashAlpha - 5
     end
     if flashAlpha == 128 then rise = false end
     if flashAlpha == 25 then rise = true end
@@ -140,8 +143,10 @@ local function targetBuffs(count)
     if TARGET.BuffCount() ~= nil then
         for i = 1, count do
             local sIcon = BUFF(i).SpellIcon() or 0
-            if BUFF(i)~= nil then DrawInspectableSpellIcon(sIcon, BUFF(i), i) end
-            iconsDrawn = iconsDrawn + 1
+            if BUFF(i)~= nil then
+                DrawInspectableSpellIcon(sIcon, BUFF(i), i)
+                iconsDrawn = iconsDrawn + 1
+            end
             -- Check if we've reached the max icons for the row, if so reset counter and new line
             if iconsDrawn >= maxIconsRow then
                 iconsDrawn = 0 -- Reset counter
@@ -212,11 +217,13 @@ function GUI_Target(open)
             local meName = ME.DisplayName()
             ImGui.Text(meName)
             local combatState = ME.CombatState()
-            if ME.Poisoned() then 
-                ImGui.SameLine(ImGui.GetColumnWidth() - 65)
+            if ME.Poisoned() and ME.Diseased() then
+                ImGui.SameLine(ImGui.GetColumnWidth() - 45)
+                DrawStatusIcon(2579,'item','Diseased and Posioned')
+            elseif ME.Poisoned() then 
+                ImGui.SameLine(ImGui.GetColumnWidth() - 45)
                 DrawStatusIcon(42,'spell','Posioned')
-            end
-            if ME.Diseased() then
+            elseif ME.Diseased() then
                 ImGui.SameLine(ImGui.GetColumnWidth() - 45)
                 DrawStatusIcon(41,'spell','Diseased')
             end
