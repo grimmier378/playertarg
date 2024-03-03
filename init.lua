@@ -26,7 +26,7 @@ local textureHeight = 26
 local flashAlpha = 1
 local rise = true
 local ShowGUI = true
-local ver = "v1.6.1"
+local ver = "v1.63"
 local tPlayerFlags = bit32.bor(ImGuiTableFlags.NoBorders, ImGuiTableFlags.NoBordersInBody, ImGuiTableFlags.NoPadInnerX,
     ImGuiTableFlags.NoPadOuterX, ImGuiTableFlags.Resizable, ImGuiTableFlags.SizingFixedFit)
 
@@ -177,7 +177,7 @@ function GUI_Target(open)
     -- Default window size
     ImGui.SetNextWindowSize(216, 239, ImGuiCond.FirstUseEver)
     local show = false
-    open, show = ImGui.Begin("Target", open, winFlag)
+    open, show = ImGui.Begin(ME.DisplayName().."##Target", open, winFlag)
     if not show then
         ImGui.PopStyleVar()
         ImGui.End()
@@ -226,6 +226,9 @@ function GUI_Target(open)
             elseif ME.Diseased() then
                 ImGui.SameLine(ImGui.GetColumnWidth() - 45)
                 DrawStatusIcon(41,'spell','Diseased')
+            elseif ME.Dotted() then
+                ImGui.SameLine(ImGui.GetColumnWidth() - 45)
+                DrawStatusIcon(2585,'item','Dotted')
             end
             ImGui.SameLine(ImGui.GetColumnWidth() - 25)
             if combatState == 'DEBUFFED' then                
