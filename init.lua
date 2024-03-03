@@ -229,6 +229,9 @@ function GUI_Target(open)
             elseif ME.Dotted() then
                 ImGui.SameLine(ImGui.GetColumnWidth() - 45)
                 DrawStatusIcon(2585,'item','Dotted')
+            elseif ME.Cursed() then
+                ImGui.SameLine(ImGui.GetColumnWidth() - 45)
+                DrawStatusIcon(161,'spell','Cursed')
             end
             ImGui.SameLine(ImGui.GetColumnWidth() - 25)
             if combatState == 'DEBUFFED' then                
