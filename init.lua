@@ -228,10 +228,13 @@ function GUI_Target(open)
                 DrawStatusIcon(41,'spell','Diseased')
             elseif ME.Dotted() then
                 ImGui.SameLine(ImGui.GetColumnWidth() - 45)
-                DrawStatusIcon(2585,'item','Dotted')
+                DrawStatusIcon(5987,'item','Dotted')
             elseif ME.Cursed() then
                 ImGui.SameLine(ImGui.GetColumnWidth() - 45)
-                DrawStatusIcon(161,'spell','Cursed')
+                DrawStatusIcon(5759,'item','Cursed')
+            elseif ME.Corrupted() then
+                ImGui.SameLine(ImGui.GetColumnWidth() - 45)
+                DrawStatusIcon(5758,'item','Corrupted')
             end
             ImGui.SameLine(ImGui.GetColumnWidth() - 25)
             if combatState == 'DEBUFFED' then                
