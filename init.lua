@@ -453,6 +453,7 @@ end)
 
 local function MainLoop()
     while true do
+        if TLO.Window('CharacterListWnd').Open() then return false end
         mq.delay(1000)
         if ME.Zoning() then
             ShowGUI = false
