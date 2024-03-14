@@ -172,6 +172,7 @@ end
 
 function GUI_Target(open)
     if not ShowGUI then return end
+    if TLO.Me.Zoning() then return end
     --Rounded corners
     ImGui.PushStyleVar(ImGuiStyleVar.FrameRounding, 5)
     -- Default window size
@@ -183,7 +184,6 @@ function GUI_Target(open)
         ImGui.End()
         return open
     end
-    if not TLO.Me.Zoning() then
         -- Combat Status
         if ME.Combat() then
             ImGui.SetNextItemAllowOverlap()
@@ -438,11 +438,6 @@ function GUI_Target(open)
         ImGui.PopStyleVar()
         ImGui.Spacing()
         ImGui.End()
-    else
-        ImGui.PopStyleVar()
-        ImGui.Spacing()
-        ImGui.End()
-    end
     return open
 end
 
