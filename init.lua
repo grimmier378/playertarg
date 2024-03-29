@@ -36,6 +36,14 @@ local ZoomLvl = 1
 local themeFile = mq.configDir .. '/MyThemeZ.lua'
 local ColorCount, ColorCountConf = 0, 0
 local themeName = 'Default'
+local script = 'PlayerTarg'
+local defaults, settings, temp = {}, {}, {}
+defaults = {
+        Scale = 1.0,
+        LoadTheme = 'Default',
+        locked = false,
+}
+local configFile = mq.configDir .. '/MyUI_Configs.lua'
 
 local function GetInfoToolTip()
     local pInfoToolTip = (ME.DisplayName() ..
@@ -56,6 +64,14 @@ local function File_Exists(name)
     if f~=nil then io.close(f) return true else return false end
 end
 
+---comment Writes settings from the settings table passed to the setting file (full path required)
+-- Uses mq.pickle to serialize the table and write to file
+---@param file string -- File Name and path
+---@param settings table -- Table of settings to write
+local function writeSettings(file, settings)
+    mq.pickle(file, settings)
+end
+
 local function loadTheme()
     if File_Exists(themeFile) then
         theme = dofile(themeFile)
@@ -63,6 +79,44 @@ local function loadTheme()
         theme = require('themes.lua')
     end
     themeName = theme.LoadTheme or 'notheme'
+end
+
+local function loadSettings()
+    if not File_Exists(configFile) then
+        mq.pickle(configFile, defaults)
+        loadSettings()
+    else
+
+    -- Load settings from the Lua config file
+    temp = {}
+    settings = dofile(configFile)
+    if not settings[script] then
+        settings[script] = {}
+        settings[script] = defaults end
+        temp = settings[script]
+    end
+
+    loadTheme()
+
+    if settings[script].locked == nil then
+        settings[script].locked = false
+    end
+
+    if settings[script].Scale == nil then
+        settings[script].Scale = 1
+    end
+
+    if not settings[script].LoadTheme then
+        settings[script].LoadTheme = theme.LoadTheme
+    end
+    locked = settings[script].locked
+    ZoomLvl = settings[script].Scale
+
+    themeName = settings[script].LoadTheme
+
+    writeSettings(configFile, settings)
+
+    temp = settings[script]
 end
 
 ---comment
@@ -237,7 +291,7 @@ local function PlayerTargConf_GUI(open)
             if ImGui.Selectable(data.Name, isSelected) then
                 theme.LoadTheme = data.Name
                 themeName = theme.LoadTheme
-                -- useThemeName = themeName
+                settings[script].LoadTheme = themeName
             end
         end
         ImGui.EndCombo()
@@ -254,6 +308,7 @@ local function PlayerTargConf_GUI(open)
 
     if ImGui.Button('close') then
         openConfigGUI = false
+        writeSettings(configFile,settings)
     end
 
     if ColorCountConf > 0 then ImGui.PopStyleColor(ColorCountConf) end
@@ -289,7 +344,8 @@ function GUI_Target(open)
         if ImGui.Button(lockedIcon) then
             --ImGuiWindowFlags.NoMove
             locked = not locked
-
+            settings[script].locked = locked
+            writeSettings(configFile, settings)
         end
         if ImGui.IsItemHovered() then
             ImGui.BeginTooltip()
@@ -569,7 +625,7 @@ end
 
 local openGUI = true
 local function init()
-    loadTheme()
+    loadSettings()
     mq.imgui.init('GUI_Target', GUI_Target)
     mq.imgui.init("PlayerTargConfig", PlayerTargConf_GUI)
 end
@@ -579,7 +635,7 @@ end
 local function MainLoop()
     while true do
         if TLO.Window('CharacterListWnd').Open() then return false end
-        mq.delay(100)
+        mq.delay(1000)
         if ME.Zoning() then
             ShowGUI = false
         else
