@@ -27,7 +27,7 @@ local flashAlpha = 1
 local rise = true
 local ShowGUI, locked = true, false
 local openConfigGUI = false
-local ver = "v1.68"
+local ver = "v1.69"
 local tPlayerFlags = bit32.bor(ImGuiTableFlags.NoBorders, ImGuiTableFlags.NoBordersInBody, ImGuiTableFlags.NoPadInnerX,
     ImGuiTableFlags.NoPadOuterX, ImGuiTableFlags.Resizable, ImGuiTableFlags.SizingFixedFit)
 
@@ -308,6 +308,7 @@ local function PlayerTargConf_GUI(open)
 
     if ImGui.Button('close') then
         openConfigGUI = false
+        settings = dofile(configFile)
         writeSettings(configFile,settings)
     end
 
@@ -344,6 +345,7 @@ function GUI_Target(open)
         if ImGui.Button(lockedIcon) then
             --ImGuiWindowFlags.NoMove
             locked = not locked
+            settings = dofile(configFile)
             settings[script].locked = locked
             writeSettings(configFile, settings)
         end
