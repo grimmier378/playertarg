@@ -21,12 +21,11 @@ local TARGET = TLO.Target
 local BUFF = TLO.Target.Buff
 local winFlag = bit32.bor(ImGuiWindowFlags.NoTitleBar, ImGuiWindowFlags.MenuBar, ImGuiWindowFlags.NoScrollbar, ImGuiWindowFlags.NoScrollWithMouse)
 local pulse = true
-local textureWidth = 26
-local textureHeight = 26
+local iconSize = 26
 local flashAlpha = 1
 local rise = true
 local ShowGUI, locked = true, false
-local openConfigGUI = false
+local openConfigGUI, openGUI = false, true
 local ver = "v1.69"
 local tPlayerFlags = bit32.bor(ImGuiTableFlags.NoBorders, ImGuiTableFlags.NoBordersInBody, ImGuiTableFlags.NoPadInnerX,
     ImGuiTableFlags.NoPadOuterX, ImGuiTableFlags.Resizable, ImGuiTableFlags.SizingFixedFit)
@@ -42,6 +41,7 @@ defaults = {
         Scale = 1.0,
         LoadTheme = 'Default',
         locked = false,
+        iconSize = 26,
 }
 local configFile = mq.configDir .. '/MyUI_Configs.lua'
 
@@ -106,9 +106,14 @@ local function loadSettings()
         settings[script].Scale = 1
     end
 
+    if settings[script].IconSize == nil then
+        settings[script].IconSize = 26
+    end
+
     if not settings[script].LoadTheme then
         settings[script].LoadTheme = theme.LoadTheme
     end
+    iconSize = settings[script].IconSize
     locked = settings[script].locked
     ZoomLvl = settings[script].Scale
 
@@ -167,12 +172,12 @@ function DrawInspectableSpellIcon(iconID, spell, i)
         beniColor = IM_COL32(190,190,20,255) -- detrimental cast by me (yellow)
     end
     ImGui.GetWindowDrawList():AddRectFilled(ImGui.GetCursorScreenPosVec() + 1,
-        ImGui.GetCursorScreenPosVec() + textureHeight, beniColor)
+        ImGui.GetCursorScreenPosVec() + iconSize, beniColor)
     ImGui.SetCursorPos(cursor_x+3, cursor_y+3)
     if caster == ME.DisplayName() and spell.Beneficial() then
-        ImGui.DrawTextureAnimation(animSpell, textureWidth - 6, textureHeight -6, true)
+        ImGui.DrawTextureAnimation(animSpell, iconSize - 6, iconSize -6, true)
     else
-        ImGui.DrawTextureAnimation(animSpell, textureWidth - 5, textureHeight - 5)
+        ImGui.DrawTextureAnimation(animSpell, iconSize - 5, iconSize - 5)
     end
     ImGui.SetCursorPos(cursor_x+2, cursor_y+2)
     local sName = spell.Name() or '??'
@@ -181,10 +186,10 @@ function DrawInspectableSpellIcon(iconID, spell, i)
     if sDur < 18 and sDur > 0 then
         local flashColor = IM_COL32(0, 0, 0, flashAlpha)
         ImGui.GetWindowDrawList():AddRectFilled(ImGui.GetCursorScreenPosVec() +1,
-            ImGui.GetCursorScreenPosVec() + textureHeight -4, flashColor)
+            ImGui.GetCursorScreenPosVec() + iconSize -4, flashColor)
     end 
     ImGui.SetCursorPos(cursor_x, cursor_y)
-    ImGui.InvisibleButton(sName, ImVec2(textureWidth, textureHeight), bit32.bor(ImGuiButtonFlags.MouseButtonRight))
+    ImGui.InvisibleButton(sName, ImVec2(iconSize, iconSize), bit32.bor(ImGuiButtonFlags.MouseButtonRight))
     if ImGui.IsItemHovered() then
         if (ImGui.IsMouseReleased(1)) then
             spell.Inspect()
@@ -205,13 +210,13 @@ function DrawStatusIcon(iconID, type, txt)
     animSpell:SetTextureCell(iconID or 0)
     animItem:SetTextureCell(iconID or 3996)
     if type == 'item' then
-        ImGui.DrawTextureAnimation(animItem, textureWidth - 11, textureHeight - 11)
+        ImGui.DrawTextureAnimation(animItem, iconSize - 11, iconSize - 11)
     elseif type == 'pwcs' then
         local animPWCS = mq.FindTextureAnimation(iconID)
         animPWCS:SetTextureCell(iconID)
-        ImGui.DrawTextureAnimation(animPWCS, textureWidth - 11, textureHeight - 11)
+        ImGui.DrawTextureAnimation(animPWCS, iconSize - 11, iconSize - 11)
     else
-        ImGui.DrawTextureAnimation(animSpell, textureWidth - 11, textureHeight - 11)
+        ImGui.DrawTextureAnimation(animSpell, iconSize - 11, iconSize - 11)
     end
         if ImGui.IsItemHovered() then
             ImGui.BeginTooltip()
@@ -225,7 +230,7 @@ local function targetBuffs(count)
     -- Width and height of each texture
     local windowWidth = ImGui.GetWindowContentRegionWidth()
     -- Calculate max icons per row based on the window width
-    local maxIconsRow = (windowWidth / textureWidth) - 0.75
+    local maxIconsRow = (windowWidth / iconSize) - 0.75
     if rise == true then
         flashAlpha = flashAlpha + 5
     elseif rise == false then
@@ -305,10 +310,21 @@ local function PlayerTargConf_GUI(open)
     if ZoomLvl ~= tmpZoom then
         ZoomLvl = tmpZoom
     end
+    -- Slider for adjusting Icon Size
+    local tmpSize = iconSize
+    if iconSize then
+        tmpSize = ImGui.SliderInt("Icon Size##MyGroup", tmpSize, 15, 50)
+    end
+    if iconSize ~= tmpSize then
+        iconSize = tmpSize
+    end
 
     if ImGui.Button('close') then
         openConfigGUI = false
         settings = dofile(configFile)
+        settings[script].Scale = ZoomLvl
+        settings[script].IconSize = iconSize
+        settings[script].LoadTheme = themeName
         writeSettings(configFile,settings)
     end
 
@@ -625,14 +641,11 @@ function GUI_Target(open)
     return open
 end
 
-local openGUI = true
 local function init()
     loadSettings()
     mq.imgui.init('GUI_Target', GUI_Target)
     mq.imgui.init("PlayerTargConfig", PlayerTargConf_GUI)
 end
-
-
 
 local function MainLoop()
     while true do
