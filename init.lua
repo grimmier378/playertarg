@@ -110,13 +110,13 @@ local function loadSettings()
         settings[script].IconSize = 26
     end
 
-    if not settings[script].LoadTheme then
+    if settings[script].LoadTheme == nil then
         settings[script].LoadTheme = theme.LoadTheme
     end
+    
     iconSize = settings[script].IconSize
     locked = settings[script].locked
     ZoomLvl = settings[script].Scale
-
     themeName = settings[script].LoadTheme
 
     writeSettings(configFile, settings)
