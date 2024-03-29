@@ -11,7 +11,7 @@ local mq = require('mq')
 local ImGui = require('ImGui')
 local Icons = require('mq.ICONS')
 local COLOR = require('colors.colors')
-
+local gIcon = Icons.MD_SETTINGS
 -- set variables
 local animSpell = mq.FindTextureAnimation('A_SpellIcons')
 local animItem = mq.FindTextureAnimation('A_DragItem')
@@ -19,16 +19,23 @@ local TLO = mq.TLO
 local ME = TLO.Me
 local TARGET = TLO.Target
 local BUFF = TLO.Target.Buff
-local winFlag = bit32.bor(ImGuiWindowFlags.NoTitleBar, ImGuiWindowFlags.NoScrollbar, ImGuiWindowFlags.NoScrollWithMouse)
+local winFlag = bit32.bor(ImGuiWindowFlags.NoTitleBar, ImGuiWindowFlags.MenuBar, ImGuiWindowFlags.NoScrollbar, ImGuiWindowFlags.NoScrollWithMouse)
 local pulse = true
 local textureWidth = 26
 local textureHeight = 26
 local flashAlpha = 1
 local rise = true
-local ShowGUI = true
-local ver = "v1.65"
+local ShowGUI, locked = true, false
+local openConfigGUI = false
+local ver = "v1.68"
 local tPlayerFlags = bit32.bor(ImGuiTableFlags.NoBorders, ImGuiTableFlags.NoBordersInBody, ImGuiTableFlags.NoPadInnerX,
     ImGuiTableFlags.NoPadOuterX, ImGuiTableFlags.Resizable, ImGuiTableFlags.SizingFixedFit)
+
+local theme = {}
+local ZoomLvl = 1
+local themeFile = mq.configDir .. '/MyThemeZ.lua'
+local ColorCount, ColorCountConf = 0, 0
+local themeName = 'Default'
 
 local function GetInfoToolTip()
     local pInfoToolTip = (ME.DisplayName() ..
@@ -39,6 +46,40 @@ local function GetInfoToolTip()
         '\nEnd: ' .. tostring(ME.CurrentEndurance()) .. ' of ' .. tostring(ME.MaxEndurance())
     )
     return pInfoToolTip
+end
+
+---comment Check to see if the file we want to work on exists.
+---@param name string -- Full Path to file
+---@return boolean -- returns true if the file exists and false otherwise
+local function File_Exists(name)
+    local f=io.open(name,"r")
+    if f~=nil then io.close(f) return true else return false end
+end
+
+local function loadTheme()
+    if File_Exists(themeFile) then
+        theme = dofile(themeFile)
+    else
+        theme = require('themes.lua')
+    end
+    themeName = theme.LoadTheme or 'notheme'
+end
+
+---comment
+---@param counter integer -- the counter used for this window to keep track of color changes
+---@param themeName string -- name of the theme to load form table
+---@return integer -- returns the new counter value 
+local function DrawTheme(counter, themeName)
+    -- Push Theme Colors
+    for tID, tData in pairs(theme.Theme) do
+        if tData.Name == themeName then
+            for pID, cData in pairs(theme.Theme[tID].Color) do
+                ImGui.PushStyleColor(pID, ImVec4(cData.Color[1], cData.Color[2], cData.Color[3], cData.Color[4]))
+                counter = counter +1
+            end
+        end
+    end
+    return counter
 end
 
 local function getDuration(i)
@@ -64,7 +105,7 @@ function DrawInspectableSpellIcon(iconID, spell, i)
     local cursor_x, cursor_y = ImGui.GetCursorPos()
     local beniColor = IM_COL32(0,20,180,190) -- blue benificial default color
     animSpell:SetTextureCell(iconID or 0)
-    local caster = spell.Caster() or '?'
+    local caster = spell.Caster() or '?' -- the caster of the Spell
     if not spell.Beneficial() then 
         beniColor = IM_COL32(255,0,0,190) --red detrimental
     end
@@ -166,24 +207,101 @@ end
 
 ---@param spawn MQSpawn
 local function getConLevel(spawn)
-    local conColor = string.lower(spawn.ConColor())
+    local conColor = string.lower(spawn.ConColor()) or 'WHITE'
     return conColor
+end
+
+local function PlayerTargConf_GUI(open)
+    if not openConfigGUI then return end
+    ColorCountConf = 0
+	
+    ColorCountConf = DrawTheme(ColorCountConf, themeName)
+    open, openConfigGUI = ImGui.Begin("MyGroup Conf", open, bit32.bor(ImGuiWindowFlags.None, ImGuiWindowFlags.NoCollapse, ImGuiWindowFlags.AlwaysAutoResize))
+    ImGui.SetWindowFontScale(ZoomLvl)
+    if not openConfigGUI then
+        openConfigGUI = false
+        open = false
+        if ColorCountConf > 0 then ImGui.PopStyleColor(ColorCountConf) end
+        ImGui.SetWindowFontScale(ZoomLvl)
+        ImGui.End()
+        return open
+    end
+    ImGui.SameLine()
+
+    ImGui.Text("Cur Theme: %s", themeName)
+    -- Combo Box Load Theme
+    if ImGui.BeginCombo("Load Theme##MyGroup", themeName) then
+        ImGui.SetWindowFontScale(ZoomLvl)
+        for k, data in pairs(theme.Theme) do
+            local isSelected = data.Name == themeName
+            if ImGui.Selectable(data.Name, isSelected) then
+                theme.LoadTheme = data.Name
+                themeName = theme.LoadTheme
+                -- useThemeName = themeName
+            end
+        end
+        ImGui.EndCombo()
+    end
+
+    -- Slider for adjusting zoom level
+    local tmpZoom = ZoomLvl
+    if ZoomLvl then
+        tmpZoom = ImGui.SliderFloat("Zoom Level##MyGroup", tmpZoom, 0.5, 2.0)
+    end
+    if ZoomLvl ~= tmpZoom then
+        ZoomLvl = tmpZoom
+    end
+
+    if ImGui.Button('close') then
+        openConfigGUI = false
+    end
+
+    if ColorCountConf > 0 then ImGui.PopStyleColor(ColorCountConf) end
+    ImGui.SetWindowFontScale(ZoomLvl)
+    ImGui.End()
+
 end
 
 function GUI_Target(open)
     if not ShowGUI then return end
     if TLO.Me.Zoning() then return end
+    ColorCount = 0
+    local flags = winFlag
     --Rounded corners
-    ImGui.PushStyleVar(ImGuiStyleVar.FrameRounding, 5)
+    ImGui.PushStyleVar(ImGuiStyleVar.FrameRounding, 10)
     -- Default window size
     ImGui.SetNextWindowSize(216, 239, ImGuiCond.FirstUseEver)
+    ColorCount = DrawTheme(ColorCount, themeName)
     local show = false
-    open, show = ImGui.Begin(ME.DisplayName().."##Target", open, winFlag)
+    if locked then
+        flags = bit32.bor(ImGuiWindowFlags.NoTitleBar, ImGuiWindowFlags.NoScrollbar, ImGuiWindowFlags.MenuBar, ImGuiWindowFlags.NoMove, ImGuiWindowFlags.NoScrollWithMouse)
+    end
+    open, show = ImGui.Begin(ME.DisplayName().."##Target", open, flags)
     if not show then
+        if ColorCount > 0 then ImGui.PopStyleColor(ColorCount) end
         ImGui.PopStyleVar()
         ImGui.End()
         return open
     end
+    if ImGui.BeginMenuBar() then
+        local lockedIcon = locked and Icons.FA_LOCK .. '##lockTabButton_MyChat' or
+        Icons.FA_UNLOCK .. '##lockTablButton_MyChat'
+        if ImGui.Button(lockedIcon) then
+            --ImGuiWindowFlags.NoMove
+            locked = not locked
+
+        end
+        if ImGui.IsItemHovered() then
+            ImGui.BeginTooltip()
+            ImGui.Text("Lock Window")
+            ImGui.EndTooltip()
+        end
+        if ImGui.Button(gIcon..'##PlayerTarg') then
+            openConfigGUI = not openConfigGUI
+        end
+        ImGui.EndMenuBar()
+    end
+    
         -- Combat Status
         if ME.Combat() then
             ImGui.SetNextItemAllowOverlap()
@@ -212,7 +330,7 @@ function GUI_Target(open)
             ImGui.TableSetupColumn("##tLvl", ImGuiTableColumnFlags.NoResize, 30)
             ImGui.TableNextRow()
             -- Name
-            ImGui.SetWindowFontScale(1)
+            ImGui.SetWindowFontScale(ZoomLvl)
             ImGui.TableSetColumnIndex(0)
             local meName = ME.DisplayName()
             ImGui.Text(meName)
@@ -263,7 +381,7 @@ function GUI_Target(open)
                     ImGui.PopStyleColor()
                 end
             end
-            ImGui.SetWindowFontScale(.91)
+            ImGui.SetWindowFontScale(ZoomLvl * 0.91)
             -- Icons
             ImGui.TableSetColumnIndex(2)
             ImGui.PushStyleVar(ImGuiStyleVar.ItemSpacing, 0, 0)
@@ -284,13 +402,13 @@ function GUI_Target(open)
             --  ImGui.SameLine()
             ImGui.Text(' ')
             ImGui.SameLine()
-            ImGui.SetWindowFontScale(.75)
+            ImGui.SetWindowFontScale(ZoomLvl * .75)
             ImGui.Text(ME.Heading() or '??')
             ImGui.PopStyleVar()
             -- Lvl
             ImGui.TableSetColumnIndex(3)
             ImGui.PushStyleVar(ImGuiStyleVar.ItemSpacing, 2, 0)
-            ImGui.SetWindowFontScale(1)
+            ImGui.SetWindowFontScale(ZoomLvl)
             ImGui.Text(tostring(ME.Level() or 0))
             if ImGui.IsItemHovered() then
                 ImGui.BeginTooltip()
@@ -302,7 +420,7 @@ function GUI_Target(open)
         end
         ImGui.Separator()
         -- My Health Bar
-        ImGui.SetWindowFontScale(0.75)
+        ImGui.SetWindowFontScale(ZoomLvl * 0.75)
         if ME.PctHPs() <= 0 then
             ImGui.PushStyleColor(ImGuiCol.PlotHistogram,(COLOR.color('purple')))
         elseif ME.PctHPs() < 15 then
@@ -344,16 +462,26 @@ function GUI_Target(open)
         end
         --Target Info
         if (TARGET() ~= nil) then
+            local targetName = TARGET.CleanName() or '?'
+            local tC = getConLevel(TARGET) or "WHITE"
+            local tClass = TARGET.Class.ShortName() == 'UNKNOWN CLASS' and Icons.MD_HELP_OUTLINE or
+                TARGET.Class.ShortName()
+            local tLvl = TARGET.Level() or 0
+            local tBodyType = TARGET.Body.Name() or '?'
             --Target Health Bar
             if TARGET.PctHPs() < 25 then
                 ImGui.PushStyleColor(ImGuiCol.PlotHistogram,(COLOR.color('orange')))
             else
                 ImGui.PushStyleColor(ImGuiCol.PlotHistogram,(COLOR.color('red')))
             end
-            ImGui.ProgressBar(((tonumber(TARGET.PctHPs() or 0)) / 100), ImGui.GetContentRegionAvail(), 30,
-                '##' .. TARGET.PctHPs())
+            ImGui.ProgressBar(((tonumber(TARGET.PctHPs() or 0)) / 100), ImGui.GetContentRegionAvail(), 30,'##' .. TARGET.PctHPs())
             ImGui.PopStyleColor()
-            ImGui.SetWindowFontScale(0.9)
+            ImGui.SetWindowFontScale(ZoomLvl * 0.9)
+            if ImGui.IsItemHovered() then
+                ImGui.BeginTooltip()
+                ImGui.Text(string.format("Name: %s\t Lvl: %s\nClass: %s\nType: %s", targetName,tLvl,tClass,tBodyType ))
+                ImGui.EndTooltip()
+            end
             ImGui.SetCursorPosY(ImGui.GetCursorPosY() - 37)
             ImGui.SetCursorPosX(9)
             if ImGui.BeginTable("##targetInfoOverlay", 2, tPlayerFlags) then
@@ -362,12 +490,12 @@ function GUI_Target(open)
                 -- First Row: Name, con, distance
                 ImGui.TableNextRow()
                 ImGui.TableSetColumnIndex(0) -- Name and CON in the first column
-                ImGui.SetWindowFontScale(0.9)
-                local targetName = TARGET.CleanName()
+                ImGui.SetWindowFontScale(ZoomLvl * 0.9)
+
                 ImGui.Text(targetName)
                 -- Distance in the second column
                 ImGui.TableSetColumnIndex(1)
-                local tC = getConLevel(TARGET)
+
                 ImGui.PushStyleColor(ImGuiCol.Text,COLOR.color(tC))
                 if tC == 'red' then
                     ImGui.Text('   ' .. Icons.MD_WARNING)
@@ -382,18 +510,15 @@ function GUI_Target(open)
                 -- Second Row: Class, Level, and Aggro%
                 ImGui.TableNextRow()
                 ImGui.TableSetColumnIndex(0) -- Class and Level in the first column
-                local tClass = TARGET.Class.ShortName() == 'UNKNOWN CLASS' and Icons.MD_HELP_OUTLINE or
-                    TARGET.Class.ShortName()
-                local tLvl = TARGET.Level() or 0
-                local tBodyType = TARGET.Body.Name() or ' '
+
                 ImGui.Text(tostring(tLvl) .. ' ' .. tClass .. '\t' .. tBodyType)
                 -- Aggro% text in the second column
                 ImGui.TableSetColumnIndex(1)
-                ImGui.SetWindowFontScale(1)
+                ImGui.SetWindowFontScale(ZoomLvl)
                 ImGui.Text(tostring(TARGET.PctHPs()) .. '%')
                 ImGui.EndTable()
             end
-            ImGui.SetWindowFontScale(0.75)
+            ImGui.SetWindowFontScale(ZoomLvl * 0.75)
             ImGui.Separator()
             --Aggro % Bar
             if (TARGET.Aggressive) then
@@ -409,7 +534,7 @@ function GUI_Target(open)
                 if (TARGET.SecondaryAggroPlayer() ~= nil) then
                     ImGui.SetCursorPosY(ImGui.GetCursorPosY() - 15)
                     ImGui.SetCursorPosX(ImGui.GetCursorPosX() + 5)
-                    ImGui.Text(TARGET.SecondaryAggroPlayer.CleanName())
+                    ImGui.Text(TARGET.SecondaryAggroPlayer())
                 end
                 --Aggro % Label middle of bar
                 ImGui.SetCursorPosY(ImGui.GetCursorPosY() - 15)
@@ -435,6 +560,7 @@ function GUI_Target(open)
         else
             ImGui.Text('')
         end
+        if ColorCount > 0 then ImGui.PopStyleColor(ColorCount) end
         ImGui.PopStyleVar()
         ImGui.Spacing()
         ImGui.End()
@@ -442,14 +568,18 @@ function GUI_Target(open)
 end
 
 local openGUI = true
-ImGui.Register('GUI_Target', function()
-    openGUI = GUI_Target(openGUI)
-end)
+local function init()
+    loadTheme()
+    mq.imgui.init('GUI_Target', GUI_Target)
+    mq.imgui.init("PlayerTargConfig", PlayerTargConf_GUI)
+end
+
+
 
 local function MainLoop()
     while true do
         if TLO.Window('CharacterListWnd').Open() then return false end
-        mq.delay(1000)
+        mq.delay(100)
         if ME.Zoning() then
             ShowGUI = false
         else
@@ -462,5 +592,6 @@ local function MainLoop()
     end
 end
 
+init()
 printf("\ag %s \aw[\ayPlayer Targ\aw] ::\a-t Version \aw::\ay %s \at Loaded",TLO.Time(), ver)
 MainLoop()
