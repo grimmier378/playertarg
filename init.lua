@@ -29,7 +29,7 @@ local openConfigGUI, openGUI = false, true
 local ver = "v1.69"
 local tPlayerFlags = bit32.bor(ImGuiTableFlags.NoBorders, ImGuiTableFlags.NoBordersInBody, ImGuiTableFlags.NoPadInnerX,
     ImGuiTableFlags.NoPadOuterX, ImGuiTableFlags.Resizable, ImGuiTableFlags.SizingFixedFit)
-
+local progressSize = 10
 local theme = {}
 local ZoomLvl = 1
 local themeFile = mq.configDir .. '/MyThemeZ.lua'
@@ -42,6 +42,7 @@ defaults = {
         LoadTheme = 'Default',
         locked = false,
         iconSize = 26,
+        ProgressSize = 10,
 }
 local configFile = mq.configDir .. '/MyUI_Configs.lua'
 
@@ -114,6 +115,11 @@ local function loadSettings()
         settings[script].LoadTheme = theme.LoadTheme
     end
 
+    if settings[script].ProgressSize == nil then
+        settings[script].ProgressSize = progressSize
+    end
+
+    progressSize = settings[script].ProgressSize
     iconSize = settings[script].IconSize
     locked = settings[script].locked
     ZoomLvl = settings[script].Scale
@@ -319,9 +325,19 @@ local function PlayerTargConf_GUI(open)
         iconSize = tmpSize
     end
 
+    -- Slider for adjusting Progress Bar Size
+    local tmpPrgSz = progressSize
+    if progressSize then
+        tmpPrgSz = ImGui.SliderInt("Progress Bar Size##MyGroup", tmpPrgSz, 5, 50)
+    end
+    if progressSize ~= tmpPrgSz then
+        progressSize = tmpPrgSz
+    end
+
     if ImGui.Button('close') then
         openConfigGUI = false
         settings = dofile(configFile)
+        settings[script].ProgressSize = progressSize
         settings[script].Scale = ZoomLvl
         settings[script].IconSize = iconSize
         settings[script].LoadTheme = themeName
@@ -389,7 +405,7 @@ function GUI_Target(open)
                 ImGui.PushStyleColor(ImGuiCol.PlotHistogram,(COLOR.color('red')))
                 pulse = true
             end
-            ImGui.ProgressBar(1, 21, 20, '##c')
+            ImGui.ProgressBar(1, iconSize - 5, iconSize - 6, '##c')
             --ImGui.Text(Icons.MD_LENS)
             ImGui.PopStyleColor()
         end
@@ -509,7 +525,7 @@ function GUI_Target(open)
         else
             ImGui.PushStyleColor(ImGuiCol.PlotHistogram,(COLOR.color('red')))
         end
-        ImGui.ProgressBar(((tonumber(ME.PctHPs() or 0)) / 100), ImGui.GetContentRegionAvail(), 10, '##pctHps')
+        ImGui.ProgressBar(((tonumber(ME.PctHPs() or 0)) / 100), ImGui.GetContentRegionAvail(), progressSize , '##pctHps')
         ImGui.PopStyleColor()
         ImGui.SetCursorPosY(ImGui.GetCursorPosY() - 15)
         ImGui.SetCursorPosX(ImGui.GetCursorPosX() + ((ImGui.GetWindowWidth() / 2) - 8))
@@ -517,7 +533,7 @@ function GUI_Target(open)
         --My Mana Bar
         if (tonumber(ME.MaxMana()) > 0) then
             ImGui.PushStyleColor(ImGuiCol.PlotHistogram,(COLOR.color('blue')))
-            ImGui.ProgressBar(((tonumber(ME.PctMana() or 0)) / 100), ImGui.GetContentRegionAvail(), 10, '##pctMana')
+            ImGui.ProgressBar(((tonumber(ME.PctMana() or 0)) / 100), ImGui.GetContentRegionAvail(), progressSize, '##pctMana')
             ImGui.PopStyleColor()
             ImGui.SetCursorPosY(ImGui.GetCursorPosY() - 15)
             ImGui.SetCursorPosX(ImGui.GetCursorPosX() + ((ImGui.GetWindowWidth() / 2) - 8))
@@ -525,7 +541,7 @@ function GUI_Target(open)
         end
         --My Endurance bar
         ImGui.PushStyleColor(ImGuiCol.PlotHistogram,(COLOR.color('yellow2')))
-        ImGui.ProgressBar(((tonumber(ME.PctEndurance() or 0)) / 100), ImGui.GetContentRegionAvail(), 10, '##pctEndurance')
+        ImGui.ProgressBar(((tonumber(ME.PctEndurance() or 0)) / 100), ImGui.GetContentRegionAvail(), progressSize, '##pctEndurance')
         ImGui.PopStyleColor()
         ImGui.SetCursorPosY(ImGui.GetCursorPosY() - 15)
         ImGui.SetCursorPosX(ImGui.GetCursorPosX() + ((ImGui.GetWindowWidth() / 2) - 8))
@@ -549,7 +565,7 @@ function GUI_Target(open)
             else
                 ImGui.PushStyleColor(ImGuiCol.PlotHistogram,(COLOR.color('red')))
             end
-            ImGui.ProgressBar(((tonumber(TARGET.PctHPs() or 0)) / 100), ImGui.GetContentRegionAvail(), 30,'##' .. TARGET.PctHPs())
+            ImGui.ProgressBar(((tonumber(TARGET.PctHPs() or 0)) / 100), ImGui.GetContentRegionAvail(), progressSize * 3,'##' .. TARGET.PctHPs())
             ImGui.PopStyleColor()
             ImGui.SetWindowFontScale(ZoomLvl * 0.9)
             if ImGui.IsItemHovered() then
@@ -602,7 +618,7 @@ function GUI_Target(open)
                 else
                     ImGui.PushStyleColor(ImGuiCol.PlotHistogram,(COLOR.color('purple')))
                 end                
-                ImGui.ProgressBar(((tonumber(TARGET.PctAggro() or 0)) / 100), ImGui.GetContentRegionAvail(), 10,
+                ImGui.ProgressBar(((tonumber(TARGET.PctAggro() or 0)) / 100), ImGui.GetContentRegionAvail(), progressSize,
                     '##pctAggro')
                 ImGui.PopStyleColor()
                 --Secondary Aggro Person
