@@ -287,7 +287,7 @@ local function PlayerTargConf_GUI(open)
         openConfigGUI = false
         open = false
         if ColorCountConf > 0 then ImGui.PopStyleColor(ColorCountConf) end
-        ImGui.SetWindowFontScale(ZoomLvl)
+        ImGui.SetWindowFontScale(1)
         ImGui.End()
         return open
     end
@@ -345,7 +345,7 @@ local function PlayerTargConf_GUI(open)
     end
 
     if ColorCountConf > 0 then ImGui.PopStyleColor(ColorCountConf) end
-    ImGui.SetWindowFontScale(ZoomLvl)
+    ImGui.SetWindowFontScale(1)
     ImGui.End()
 
 end
@@ -368,6 +368,7 @@ function GUI_Target(open)
     if not show then
         if ColorCount > 0 then ImGui.PopStyleColor(ColorCount) end
         ImGui.PopStyleVar()
+        ImGui.SetWindowFontScale(1)
         ImGui.End()
         return open
     end
@@ -658,6 +659,7 @@ function GUI_Target(open)
         if ImGui.IsItemHovered() then
             ImGui.SetWindowFocus(ME.DisplayName().."##Target")
         end
+        ImGui.SetWindowFontScale(1)
         ImGui.End()
     return open
 end
