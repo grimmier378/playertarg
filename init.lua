@@ -281,7 +281,7 @@ local function PlayerTargConf_GUI(open)
     ColorCountConf = 0
 	
     ColorCountConf = DrawTheme(ColorCountConf, themeName)
-    open, openConfigGUI = ImGui.Begin("MyGroup Conf", open, bit32.bor(ImGuiWindowFlags.None, ImGuiWindowFlags.NoCollapse, ImGuiWindowFlags.AlwaysAutoResize))
+    open, openConfigGUI = ImGui.Begin("MyGroup Conf##"..script, open, bit32.bor(ImGuiWindowFlags.None, ImGuiWindowFlags.NoCollapse, ImGuiWindowFlags.AlwaysAutoResize))
     ImGui.SetWindowFontScale(ZoomLvl)
     if not openConfigGUI then
         openConfigGUI = false
@@ -291,11 +291,11 @@ local function PlayerTargConf_GUI(open)
         ImGui.End()
         return open
     end
-    ImGui.SameLine()
+    ImGui.SeparatorText("Theme##"..script)
 
     ImGui.Text("Cur Theme: %s", themeName)
     -- Combo Box Load Theme
-    if ImGui.BeginCombo("Load Theme##MyGroup", themeName) then
+    if ImGui.BeginCombo("Load Theme##"..script, themeName) then
         ImGui.SetWindowFontScale(ZoomLvl)
         for k, data in pairs(theme.Theme) do
             local isSelected = data.Name == themeName
@@ -307,11 +307,11 @@ local function PlayerTargConf_GUI(open)
         end
         ImGui.EndCombo()
     end
-
+    ImGui.SeparatorText("Scaling##"..script)
     -- Slider for adjusting zoom level
     local tmpZoom = ZoomLvl
     if ZoomLvl then
-        tmpZoom = ImGui.SliderFloat("Zoom Level##MyGroup", tmpZoom, 0.5, 2.0)
+        tmpZoom = ImGui.SliderFloat("Zoom Level##"..script, tmpZoom, 0.5, 2.0)
     end
     if ZoomLvl ~= tmpZoom then
         ZoomLvl = tmpZoom
@@ -319,7 +319,7 @@ local function PlayerTargConf_GUI(open)
     -- Slider for adjusting Icon Size
     local tmpSize = iconSize
     if iconSize then
-        tmpSize = ImGui.SliderInt("Icon Size##MyGroup", tmpSize, 15, 50)
+        tmpSize = ImGui.SliderInt("Icon Size##"..script, tmpSize, 15, 50)
     end
     if iconSize ~= tmpSize then
         iconSize = tmpSize
@@ -328,13 +328,13 @@ local function PlayerTargConf_GUI(open)
     -- Slider for adjusting Progress Bar Size
     local tmpPrgSz = progressSize
     if progressSize then
-        tmpPrgSz = ImGui.SliderInt("Progress Bar Size##MyGroup", tmpPrgSz, 5, 50)
+        tmpPrgSz = ImGui.SliderInt("Progress Bar Size##"..script, tmpPrgSz, 5, 50)
     end
     if progressSize ~= tmpPrgSz then
         progressSize = tmpPrgSz
     end
-
-    if ImGui.Button('close') then
+    ImGui.SeparatorText("Save and Close##"..script)
+    if ImGui.Button('Save and Close##'..script) then
         openConfigGUI = false
         settings = dofile(configFile)
         settings[script].ProgressSize = progressSize
