@@ -372,7 +372,7 @@ function GUI_Target(open)
         ImGui.End()
         return open
     end
-    ImGui.BeginGroup()
+    -- ImGui.BeginGroup()
     if ImGui.BeginMenuBar() then
         local lockedIcon = locked and Icons.FA_LOCK .. '##lockTabButton_MyChat' or
         Icons.FA_UNLOCK .. '##lockTablButton_MyChat'
@@ -655,7 +655,7 @@ function GUI_Target(open)
         if ColorCount > 0 then ImGui.PopStyleColor(ColorCount) end
         ImGui.PopStyleVar()
         ImGui.Spacing()
-        ImGui.EndGroup()
+        -- ImGui.EndGroup()
         if ImGui.IsItemHovered() then
             ImGui.SetWindowFocus(ME.DisplayName().."##Target")
         end
