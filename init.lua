@@ -554,8 +554,10 @@ function GUI_Target(open)
         end
         --Target Info
         if (TARGET() ~= nil) then
+            ImGui.BeginGroup()
             local targetName = TARGET.CleanName() or '?'
             local tC = getConLevel(TARGET) or "WHITE"
+            if tC == 'red' then tC = 'pink' end
             local tClass = TARGET.Class.ShortName() == 'UNKNOWN CLASS' and Icons.MD_HELP_OUTLINE or
                 TARGET.Class.ShortName()
             local tLvl = TARGET.Level() or 0
@@ -589,7 +591,7 @@ function GUI_Target(open)
                 ImGui.TableSetColumnIndex(1)
 
                 ImGui.PushStyleColor(ImGuiCol.Text,COLOR.color(tC))
-                if tC == 'red' then
+                if tC == 'pink' then
                     ImGui.Text('   ' .. Icons.MD_WARNING)
                 else
                     ImGui.Text('   ' .. Icons.MD_LENS)
@@ -640,6 +642,12 @@ function GUI_Target(open)
             else
                 ImGui.Text('')
             end
+            ImGui.EndGroup()
+            if ImGui.IsItemHovered() and ImGui.IsMouseReleased(ImGuiMouseButton.Left) then
+                if mq.TLO.Cursor() then
+                    mq.cmdf('/multiline ; /if (${Cursor.ID}) /click left target')
+                end
+            end
             --Target Buffs
             if tonumber(TARGET.BuffCount()) > 0 then
                 local windowWidth, windowHeight = ImGui.GetContentRegionAvail()
@@ -649,6 +657,7 @@ function GUI_Target(open)
                 ImGui.EndChild()
                 -- End the scrollable region
             end
+            
         else
             ImGui.Text('')
         end
