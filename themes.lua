@@ -500,6 +500,93 @@ return {
 					},
 				},
 			},
+			['Style'] = {
+				[ImGuiStyleVar.WindowBorderSize] = {
+					PropertyName = 'WindowBorderSize',
+					Size = 1,
+				},
+				[ImGuiStyleVar.FrameBorderSize] = {
+					PropertyName = 'FrameBorderSize',
+					Size = 0,
+				},
+				[ImGuiStyleVar.PopupBorderSize] = {
+					PropertyName = 'PopupBorderSize',
+					Size = 1,
+				},
+				[ImGuiStyleVar.ChildBorderSize] = {
+					PropertyName = 'ChildBorderSize',
+					Size = 1,
+				},
+				[ImGuiStyleVar.TabBarBorderSize] = {
+					PropertyName = 'TabBarBorderSize',
+					Size = 1,
+				},
+				[ImGuiStyleVar.WindowRounding] = {
+					PropertyName = 'WindowRounding',
+					Size = 0,
+				},
+				[ImGuiStyleVar.FrameRounding] = {
+					PropertyName = 'FrameRounding',
+					Size = 0,
+				},
+				[ImGuiStyleVar.PopupRounding] = {
+					PropertyName = 'PopupRounding',
+					Size = 0,
+				},
+				[ImGuiStyleVar.ChildRounding] = {
+					PropertyName = 'ChildRounding',
+					Size = 0,
+				},
+				[ImGuiStyleVar.ScrollbarRounding] = {
+					PropertyName = 'ScrollbarRounding',
+					Size = 0,
+				},
+				[ImGuiStyleVar.GrabRounding] = {
+					PropertyName = 'GrabRounding',
+					Size = 0,
+				},
+				[ImGuiStyleVar.TabRounding] = {
+					PropertyName = 'TabRounding',
+					Size = 4,
+				},
+				[ImGuiStyleVar.IndentSpacing] = {
+					PropertyName = 'IndentSpacing',
+					Size = 21,
+				},
+				[ImGuiStyleVar.ScrollbarSize] = {
+					PropertyName = 'ScrollbarSize',
+					Size = 14,
+				},
+				[ImGuiStyleVar.GrabMinSize] = {
+					PropertyName = 'GrabMinSize',
+					Size = 12,
+				},
+				[ImGuiStyleVar.CellPadding] = {
+					PropertyName = 'CellPadding',
+					X = 4,
+					Y = 2,
+				},
+				[ImGuiStyleVar.WindowPadding] = {
+					PropertyName = 'WindowPadding',
+					X = 8,
+					Y = 8,
+				},
+				[ImGuiStyleVar.FramePadding] = {
+					PropertyName = 'FramePadding',
+					X = 4,
+					Y = 3,
+				},
+				[ImGuiStyleVar.ItemSpacing] = {
+					PropertyName = 'ItemSpacing',
+					X = 8,
+					Y = 4,
+				},
+				[ImGuiStyleVar.ItemInnerSpacing] = {
+					PropertyName = 'ItemInnerSpacing',
+					X = 4,
+					Y = 4,
+				},
+			},
 		},
 		[5] = {
 			['Name'] = 'Burnt',
@@ -998,6 +1085,93 @@ return {
 						[3] = 0.5099999904632567,
 						[4] = 1,
 					},
+				},
+			},
+			['Style'] = {
+				[ImGuiStyleVar.WindowBorderSize] = {
+					PropertyName = 'WindowBorderSize',
+					Size = 1,
+				},
+				[ImGuiStyleVar.FrameBorderSize] = {
+					PropertyName = 'FrameBorderSize',
+					Size = 0,
+				},
+				[ImGuiStyleVar.PopupBorderSize] = {
+					PropertyName = 'PopupBorderSize',
+					Size = 1,
+				},
+				[ImGuiStyleVar.ChildBorderSize] = {
+					PropertyName = 'ChildBorderSize',
+					Size = 1,
+				},
+				[ImGuiStyleVar.TabBarBorderSize] = {
+					PropertyName = 'TabBarBorderSize',
+					Size = 1,
+				},
+				[ImGuiStyleVar.WindowRounding] = {
+					PropertyName = 'WindowRounding',
+					Size = 0,
+				},
+				[ImGuiStyleVar.FrameRounding] = {
+					PropertyName = 'FrameRounding',
+					Size = 0,
+				},
+				[ImGuiStyleVar.PopupRounding] = {
+					PropertyName = 'PopupRounding',
+					Size = 0,
+				},
+				[ImGuiStyleVar.ChildRounding] = {
+					PropertyName = 'ChildRounding',
+					Size = 0,
+				},
+				[ImGuiStyleVar.ScrollbarRounding] = {
+					PropertyName = 'ScrollbarRounding',
+					Size = 0,
+				},
+				[ImGuiStyleVar.GrabRounding] = {
+					PropertyName = 'GrabRounding',
+					Size = 0,
+				},
+				[ImGuiStyleVar.TabRounding] = {
+					PropertyName = 'TabRounding',
+					Size = 4,
+				},
+				[ImGuiStyleVar.IndentSpacing] = {
+					PropertyName = 'IndentSpacing',
+					Size = 21,
+				},
+				[ImGuiStyleVar.ScrollbarSize] = {
+					PropertyName = 'ScrollbarSize',
+					Size = 14,
+				},
+				[ImGuiStyleVar.GrabMinSize] = {
+					PropertyName = 'GrabMinSize',
+					Size = 12,
+				},
+				[ImGuiStyleVar.CellPadding] = {
+					PropertyName = 'CellPadding',
+					X = 4,
+					Y = 2,
+				},
+				[ImGuiStyleVar.WindowPadding] = {
+					PropertyName = 'WindowPadding',
+					X = 8,
+					Y = 8,
+				},
+				[ImGuiStyleVar.FramePadding] = {
+					PropertyName = 'FramePadding',
+					X = 4,
+					Y = 3,
+				},
+				[ImGuiStyleVar.ItemSpacing] = {
+					PropertyName = 'ItemSpacing',
+					X = 8,
+					Y = 4,
+				},
+				[ImGuiStyleVar.ItemInnerSpacing] = {
+					PropertyName = 'ItemInnerSpacing',
+					X = 4,
+					Y = 4,
 				},
 			},
 		},
@@ -1500,6 +1674,93 @@ return {
 					},
 				},
 			},
+			['Style'] = {
+				[ImGuiStyleVar.WindowBorderSize] = {
+					PropertyName = 'WindowBorderSize',
+					Size = 1,
+				},
+				[ImGuiStyleVar.FrameBorderSize] = {
+					PropertyName = 'FrameBorderSize',
+					Size = 0,
+				},
+				[ImGuiStyleVar.PopupBorderSize] = {
+					PropertyName = 'PopupBorderSize',
+					Size = 1,
+				},
+				[ImGuiStyleVar.ChildBorderSize] = {
+					PropertyName = 'ChildBorderSize',
+					Size = 1,
+				},
+				[ImGuiStyleVar.TabBarBorderSize] = {
+					PropertyName = 'TabBarBorderSize',
+					Size = 1,
+				},
+				[ImGuiStyleVar.WindowRounding] = {
+					PropertyName = 'WindowRounding',
+					Size = 0,
+				},
+				[ImGuiStyleVar.FrameRounding] = {
+					PropertyName = 'FrameRounding',
+					Size = 0,
+				},
+				[ImGuiStyleVar.PopupRounding] = {
+					PropertyName = 'PopupRounding',
+					Size = 0,
+				},
+				[ImGuiStyleVar.ChildRounding] = {
+					PropertyName = 'ChildRounding',
+					Size = 0,
+				},
+				[ImGuiStyleVar.ScrollbarRounding] = {
+					PropertyName = 'ScrollbarRounding',
+					Size = 0,
+				},
+				[ImGuiStyleVar.GrabRounding] = {
+					PropertyName = 'GrabRounding',
+					Size = 0,
+				},
+				[ImGuiStyleVar.TabRounding] = {
+					PropertyName = 'TabRounding',
+					Size = 4,
+				},
+				[ImGuiStyleVar.IndentSpacing] = {
+					PropertyName = 'IndentSpacing',
+					Size = 21,
+				},
+				[ImGuiStyleVar.ScrollbarSize] = {
+					PropertyName = 'ScrollbarSize',
+					Size = 14,
+				},
+				[ImGuiStyleVar.GrabMinSize] = {
+					PropertyName = 'GrabMinSize',
+					Size = 12,
+				},
+				[ImGuiStyleVar.CellPadding] = {
+					PropertyName = 'CellPadding',
+					X = 4,
+					Y = 2,
+				},
+				[ImGuiStyleVar.WindowPadding] = {
+					PropertyName = 'WindowPadding',
+					X = 8,
+					Y = 8,
+				},
+				[ImGuiStyleVar.FramePadding] = {
+					PropertyName = 'FramePadding',
+					X = 4,
+					Y = 3,
+				},
+				[ImGuiStyleVar.ItemSpacing] = {
+					PropertyName = 'ItemSpacing',
+					X = 8,
+					Y = 4,
+				},
+				[ImGuiStyleVar.ItemInnerSpacing] = {
+					PropertyName = 'ItemInnerSpacing',
+					X = 4,
+					Y = 4,
+				},
+			},
 		},
         [1] = {
             ['Name'] = 'Default',
@@ -1725,8 +1986,93 @@ return {
                     PropertyName = 'ModalWindowDimBg'
                 }
             },
-            ['Style'] = {
-            },
+			['Style'] = {
+				[ImGuiStyleVar.WindowBorderSize] = {
+					PropertyName = 'WindowBorderSize',
+					Size = 1,
+				},
+				[ImGuiStyleVar.FrameBorderSize] = {
+					PropertyName = 'FrameBorderSize',
+					Size = 0,
+				},
+				[ImGuiStyleVar.PopupBorderSize] = {
+					PropertyName = 'PopupBorderSize',
+					Size = 1,
+				},
+				[ImGuiStyleVar.ChildBorderSize] = {
+					PropertyName = 'ChildBorderSize',
+					Size = 1,
+				},
+				[ImGuiStyleVar.TabBarBorderSize] = {
+					PropertyName = 'TabBarBorderSize',
+					Size = 1,
+				},
+				[ImGuiStyleVar.WindowRounding] = {
+					PropertyName = 'WindowRounding',
+					Size = 0,
+				},
+				[ImGuiStyleVar.FrameRounding] = {
+					PropertyName = 'FrameRounding',
+					Size = 0,
+				},
+				[ImGuiStyleVar.PopupRounding] = {
+					PropertyName = 'PopupRounding',
+					Size = 0,
+				},
+				[ImGuiStyleVar.ChildRounding] = {
+					PropertyName = 'ChildRounding',
+					Size = 0,
+				},
+				[ImGuiStyleVar.ScrollbarRounding] = {
+					PropertyName = 'ScrollbarRounding',
+					Size = 0,
+				},
+				[ImGuiStyleVar.GrabRounding] = {
+					PropertyName = 'GrabRounding',
+					Size = 0,
+				},
+				[ImGuiStyleVar.TabRounding] = {
+					PropertyName = 'TabRounding',
+					Size = 4,
+				},
+				[ImGuiStyleVar.IndentSpacing] = {
+					PropertyName = 'IndentSpacing',
+					Size = 21,
+				},
+				[ImGuiStyleVar.ScrollbarSize] = {
+					PropertyName = 'ScrollbarSize',
+					Size = 14,
+				},
+				[ImGuiStyleVar.GrabMinSize] = {
+					PropertyName = 'GrabMinSize',
+					Size = 12,
+				},
+				[ImGuiStyleVar.CellPadding] = {
+					PropertyName = 'CellPadding',
+					X = 4,
+					Y = 2,
+				},
+				[ImGuiStyleVar.WindowPadding] = {
+					PropertyName = 'WindowPadding',
+					X = 8,
+					Y = 8,
+				},
+				[ImGuiStyleVar.FramePadding] = {
+					PropertyName = 'FramePadding',
+					X = 4,
+					Y = 3,
+				},
+				[ImGuiStyleVar.ItemSpacing] = {
+					PropertyName = 'ItemSpacing',
+					X = 8,
+					Y = 4,
+				},
+				[ImGuiStyleVar.ItemInnerSpacing] = {
+					PropertyName = 'ItemInnerSpacing',
+					X = 4,
+					Y = 4,
+				},
+			},
         },
 		[4] = {
 			['Name'] = 'Grape',
@@ -2227,6 +2573,93 @@ return {
 					},
 				},
 			},
+			['Style'] = {
+				[ImGuiStyleVar.WindowBorderSize] = {
+					PropertyName = 'WindowBorderSize',
+					Size = 1,
+				},
+				[ImGuiStyleVar.FrameBorderSize] = {
+					PropertyName = 'FrameBorderSize',
+					Size = 0,
+				},
+				[ImGuiStyleVar.PopupBorderSize] = {
+					PropertyName = 'PopupBorderSize',
+					Size = 1,
+				},
+				[ImGuiStyleVar.ChildBorderSize] = {
+					PropertyName = 'ChildBorderSize',
+					Size = 1,
+				},
+				[ImGuiStyleVar.TabBarBorderSize] = {
+					PropertyName = 'TabBarBorderSize',
+					Size = 1,
+				},
+				[ImGuiStyleVar.WindowRounding] = {
+					PropertyName = 'WindowRounding',
+					Size = 0,
+				},
+				[ImGuiStyleVar.FrameRounding] = {
+					PropertyName = 'FrameRounding',
+					Size = 0,
+				},
+				[ImGuiStyleVar.PopupRounding] = {
+					PropertyName = 'PopupRounding',
+					Size = 0,
+				},
+				[ImGuiStyleVar.ChildRounding] = {
+					PropertyName = 'ChildRounding',
+					Size = 0,
+				},
+				[ImGuiStyleVar.ScrollbarRounding] = {
+					PropertyName = 'ScrollbarRounding',
+					Size = 0,
+				},
+				[ImGuiStyleVar.GrabRounding] = {
+					PropertyName = 'GrabRounding',
+					Size = 0,
+				},
+				[ImGuiStyleVar.TabRounding] = {
+					PropertyName = 'TabRounding',
+					Size = 4,
+				},
+				[ImGuiStyleVar.IndentSpacing] = {
+					PropertyName = 'IndentSpacing',
+					Size = 21,
+				},
+				[ImGuiStyleVar.ScrollbarSize] = {
+					PropertyName = 'ScrollbarSize',
+					Size = 14,
+				},
+				[ImGuiStyleVar.GrabMinSize] = {
+					PropertyName = 'GrabMinSize',
+					Size = 12,
+				},
+				[ImGuiStyleVar.CellPadding] = {
+					PropertyName = 'CellPadding',
+					X = 4,
+					Y = 2,
+				},
+				[ImGuiStyleVar.WindowPadding] = {
+					PropertyName = 'WindowPadding',
+					X = 8,
+					Y = 8,
+				},
+				[ImGuiStyleVar.FramePadding] = {
+					PropertyName = 'FramePadding',
+					X = 4,
+					Y = 3,
+				},
+				[ImGuiStyleVar.ItemSpacing] = {
+					PropertyName = 'ItemSpacing',
+					X = 8,
+					Y = 4,
+				},
+				[ImGuiStyleVar.ItemInnerSpacing] = {
+					PropertyName = 'ItemInnerSpacing',
+					X = 4,
+					Y = 4,
+				},
+			},
 		},
 		[6] = {
 			['Name'] = 'Red',
@@ -2725,6 +3158,93 @@ return {
 						[3] = 0.5099999904632567,
 						[4] = 1,
 					},
+				},
+			},
+			['Style'] = {
+				[ImGuiStyleVar.WindowBorderSize] = {
+					PropertyName = 'WindowBorderSize',
+					Size = 1,
+				},
+				[ImGuiStyleVar.FrameBorderSize] = {
+					PropertyName = 'FrameBorderSize',
+					Size = 0,
+				},
+				[ImGuiStyleVar.PopupBorderSize] = {
+					PropertyName = 'PopupBorderSize',
+					Size = 1,
+				},
+				[ImGuiStyleVar.ChildBorderSize] = {
+					PropertyName = 'ChildBorderSize',
+					Size = 1,
+				},
+				[ImGuiStyleVar.TabBarBorderSize] = {
+					PropertyName = 'TabBarBorderSize',
+					Size = 1,
+				},
+				[ImGuiStyleVar.WindowRounding] = {
+					PropertyName = 'WindowRounding',
+					Size = 0,
+				},
+				[ImGuiStyleVar.FrameRounding] = {
+					PropertyName = 'FrameRounding',
+					Size = 0,
+				},
+				[ImGuiStyleVar.PopupRounding] = {
+					PropertyName = 'PopupRounding',
+					Size = 0,
+				},
+				[ImGuiStyleVar.ChildRounding] = {
+					PropertyName = 'ChildRounding',
+					Size = 0,
+				},
+				[ImGuiStyleVar.ScrollbarRounding] = {
+					PropertyName = 'ScrollbarRounding',
+					Size = 0,
+				},
+				[ImGuiStyleVar.GrabRounding] = {
+					PropertyName = 'GrabRounding',
+					Size = 0,
+				},
+				[ImGuiStyleVar.TabRounding] = {
+					PropertyName = 'TabRounding',
+					Size = 4,
+				},
+				[ImGuiStyleVar.IndentSpacing] = {
+					PropertyName = 'IndentSpacing',
+					Size = 21,
+				},
+				[ImGuiStyleVar.ScrollbarSize] = {
+					PropertyName = 'ScrollbarSize',
+					Size = 14,
+				},
+				[ImGuiStyleVar.GrabMinSize] = {
+					PropertyName = 'GrabMinSize',
+					Size = 12,
+				},
+				[ImGuiStyleVar.CellPadding] = {
+					PropertyName = 'CellPadding',
+					X = 4,
+					Y = 2,
+				},
+				[ImGuiStyleVar.WindowPadding] = {
+					PropertyName = 'WindowPadding',
+					X = 8,
+					Y = 8,
+				},
+				[ImGuiStyleVar.FramePadding] = {
+					PropertyName = 'FramePadding',
+					X = 4,
+					Y = 3,
+				},
+				[ImGuiStyleVar.ItemSpacing] = {
+					PropertyName = 'ItemSpacing',
+					X = 8,
+					Y = 4,
+				},
+				[ImGuiStyleVar.ItemInnerSpacing] = {
+					PropertyName = 'ItemInnerSpacing',
+					X = 4,
+					Y = 4,
 				},
 			},
 		},

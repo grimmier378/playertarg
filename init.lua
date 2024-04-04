@@ -33,7 +33,7 @@ local progressSize = 10
 local theme = {}
 local ZoomLvl = 1
 local themeFile = mq.configDir .. '/MyThemeZ.lua'
-local ColorCount, ColorCountConf = 0, 0
+local ColorCount, ColorCountConf, StyleCount, StyleCountConf = 0, 0, 0, 0
 local themeName = 'Default'
 local script = 'PlayerTarg'
 local defaults, settings, temp = {}, {}, {}
@@ -131,20 +131,34 @@ local function loadSettings()
 end
 
 ---comment
----@param counter integer -- the counter used for this window to keep track of color changes
 ---@param themeName string -- name of the theme to load form table
----@return integer -- returns the new counter value 
-local function DrawTheme(counter, themeName)
-    -- Push Theme Colors
+---@return integer, integer -- returns the new counter values 
+local function DrawTheme(themeName)
+    local StyleCounter = 0
+    local ColorCounter = 0
     for tID, tData in pairs(theme.Theme) do
         if tData.Name == themeName then
             for pID, cData in pairs(theme.Theme[tID].Color) do
                 ImGui.PushStyleColor(pID, ImVec4(cData.Color[1], cData.Color[2], cData.Color[3], cData.Color[4]))
-                counter = counter +1
+                ColorCounter = ColorCounter + 1
+            end
+            if tData['Style'] ~= nil then
+                if next(tData['Style']) ~= nil then
+                    
+                    for sID, sData in pairs (theme.Theme[tID].Style) do
+                        if sData.Size ~= nil then
+                            ImGui.PushStyleVar(sID, sData.Size)
+                            StyleCounter = StyleCounter + 1
+                            elseif sData.X ~= nil then
+                            ImGui.PushStyleVar(sID, sData.X, sData.Y)
+                            StyleCounter = StyleCounter + 1
+                        end
+                    end
+                end
             end
         end
     end
-    return counter
+    return ColorCounter, StyleCounter
 end
 
 local function getDuration(i)
@@ -279,13 +293,14 @@ end
 local function PlayerTargConf_GUI(open)
     if not openConfigGUI then return end
     ColorCountConf = 0
-	
-    ColorCountConf = DrawTheme(ColorCountConf, themeName)
+	StyleCountConf = 0
+    ColorCountConf, StyleCountConf = DrawTheme(themeName)
     open, openConfigGUI = ImGui.Begin("MyGroup Conf##"..script, open, bit32.bor(ImGuiWindowFlags.None, ImGuiWindowFlags.NoCollapse, ImGuiWindowFlags.AlwaysAutoResize))
     ImGui.SetWindowFontScale(ZoomLvl)
     if not openConfigGUI then
         openConfigGUI = false
         open = false
+        if StyleCountConf > 0 then ImGui.PopStyleVar(StyleCountConf) end
         if ColorCountConf > 0 then ImGui.PopStyleColor(ColorCountConf) end
         ImGui.SetWindowFontScale(1)
         ImGui.End()
@@ -343,7 +358,7 @@ local function PlayerTargConf_GUI(open)
         settings[script].LoadTheme = themeName
         writeSettings(configFile,settings)
     end
-
+    if StyleCountConf > 0 then ImGui.PopStyleVar(StyleCountConf) end
     if ColorCountConf > 0 then ImGui.PopStyleColor(ColorCountConf) end
     ImGui.SetWindowFontScale(1)
     ImGui.End()
@@ -354,18 +369,18 @@ function GUI_Target(open)
     if not ShowGUI then return end
     if TLO.Me.Zoning() then return end
     ColorCount = 0
+    StyleCount = 0
     local flags = winFlag
-    --Rounded corners
-    ImGui.PushStyleVar(ImGuiStyleVar.FrameRounding, 10)
     -- Default window size
     ImGui.SetNextWindowSize(216, 239, ImGuiCond.FirstUseEver)
-    ColorCount = DrawTheme(ColorCount, themeName)
+    ColorCount, StyleCount = DrawTheme(themeName)
     local show = false
     if locked then
         flags = bit32.bor(ImGuiWindowFlags.NoTitleBar, ImGuiWindowFlags.NoScrollbar, ImGuiWindowFlags.MenuBar, ImGuiWindowFlags.NoMove, ImGuiWindowFlags.NoScrollWithMouse)
     end
     open, show = ImGui.Begin(ME.DisplayName().."##Target", open, flags)
     if not show then
+        if StyleCount > 0 then ImGui.PopStyleVar(StyleCount) end
         if ColorCount > 0 then ImGui.PopStyleColor(ColorCount) end
         ImGui.PopStyleVar()
         ImGui.SetWindowFontScale(1)
@@ -661,8 +676,8 @@ function GUI_Target(open)
         else
             ImGui.Text('')
         end
+        if StyleCount > 0 then ImGui.PopStyleVar(StyleCount) end
         if ColorCount > 0 then ImGui.PopStyleColor(ColorCount) end
-        ImGui.PopStyleVar()
         ImGui.Spacing()
         -- ImGui.EndGroup()
         if ImGui.IsItemHovered() then
