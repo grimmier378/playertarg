@@ -683,10 +683,6 @@ function GUI_Target(open)
         if StyleCount > 0 then ImGui.PopStyleVar(StyleCount) end
         if ColorCount > 0 then ImGui.PopStyleColor(ColorCount) end
         ImGui.Spacing()
-        -- ImGui.EndGroup()
-        if ImGui.IsItemHovered() then
-            ImGui.SetWindowFocus(ME.DisplayName().."##Target")
-        end
         ImGui.SetWindowFontScale(1)
         ImGui.End()
     return open
