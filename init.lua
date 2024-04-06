@@ -295,7 +295,7 @@ local function PlayerTargConf_GUI(open)
     ColorCountConf = 0
 	StyleCountConf = 0
     ColorCountConf, StyleCountConf = DrawTheme(themeName)
-    open, openConfigGUI = ImGui.Begin("MyGroup Conf##"..script, open, bit32.bor(ImGuiWindowFlags.None, ImGuiWindowFlags.NoCollapse, ImGuiWindowFlags.AlwaysAutoResize))
+    open, openConfigGUI = ImGui.Begin("PlayerTarg Conf##"..script, open, bit32.bor(ImGuiWindowFlags.None, ImGuiWindowFlags.NoCollapse, ImGuiWindowFlags.AlwaysAutoResize))
     ImGui.SetWindowFontScale(ZoomLvl)
     if not openConfigGUI then
         openConfigGUI = false
@@ -387,7 +387,6 @@ function GUI_Target(open)
     if not show then
         if StyleCount > 0 then ImGui.PopStyleVar(StyleCount) end
         if ColorCount > 0 then ImGui.PopStyleColor(ColorCount) end
-        ImGui.PopStyleVar()
         ImGui.SetWindowFontScale(1)
         ImGui.End()
         return open
