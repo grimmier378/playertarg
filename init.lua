@@ -217,6 +217,7 @@ function DrawInspectableSpellIcon(iconID, spell, i)
                 mq.cmdf("/nomodkey /altkey /notify TargetWindow Buff%s leftmouseup", i-1)
             end
         end
+        ImGui.SetWindowFontScale(ZoomLvl)
         ImGui.BeginTooltip()
         ImGui.Text(sName .. '\n' .. getDuration(i))
         ImGui.EndTooltip()
@@ -239,6 +240,7 @@ function DrawStatusIcon(iconID, type, txt)
         ImGui.DrawTextureAnimation(animSpell, iconSize - 11, iconSize - 11)
     end
         if ImGui.IsItemHovered() then
+            ImGui.SetWindowFontScale(ZoomLvl)
             ImGui.BeginTooltip()
             ImGui.Text(txt)
             ImGui.EndTooltip()
@@ -403,6 +405,7 @@ function GUI_Target(open)
             writeSettings(configFile, settings)
         end
         if ImGui.IsItemHovered() then
+            ImGui.SetWindowFontScale(ZoomLvl)
             ImGui.BeginTooltip()
             ImGui.Text("Lock Window")
             ImGui.EndTooltip()
@@ -523,6 +526,7 @@ function GUI_Target(open)
             ImGui.Text(tostring(ME.Level() or 0))
             if ImGui.IsItemHovered() then
                 ImGui.BeginTooltip()
+                ImGui.SetWindowFontScale(ZoomLvl)
                 ImGui.Text(GetInfoToolTip())
                 ImGui.EndTooltip()
             end
@@ -531,6 +535,7 @@ function GUI_Target(open)
         end
         ImGui.Separator()
         -- My Health Bar
+        local yPos = ImGui.GetCursorPosY()
         ImGui.SetWindowFontScale(ZoomLvl * 0.75)
         if ME.PctHPs() <= 0 then
             ImGui.PushStyleColor(ImGuiCol.PlotHistogram,(COLOR.color('purple')))
@@ -547,23 +552,25 @@ function GUI_Target(open)
         end
         ImGui.ProgressBar(((tonumber(ME.PctHPs() or 0)) / 100), ImGui.GetContentRegionAvail(), progressSize , '##pctHps')
         ImGui.PopStyleColor()
-        ImGui.SetCursorPosY(ImGui.GetCursorPosY() - 15)
+        ImGui.SetCursorPosY(yPos)
         ImGui.SetCursorPosX(ImGui.GetCursorPosX() + ((ImGui.GetWindowWidth() / 2) - 8))
         ImGui.Text(tostring(ME.PctHPs() or 0))
+        local yPos = ImGui.GetCursorPosY()
         --My Mana Bar
         if (tonumber(ME.MaxMana()) > 0) then
             ImGui.PushStyleColor(ImGuiCol.PlotHistogram,(COLOR.color('blue')))
             ImGui.ProgressBar(((tonumber(ME.PctMana() or 0)) / 100), ImGui.GetContentRegionAvail(), progressSize, '##pctMana')
             ImGui.PopStyleColor()
-            ImGui.SetCursorPosY(ImGui.GetCursorPosY() - 15)
+            ImGui.SetCursorPosY(yPos)
             ImGui.SetCursorPosX(ImGui.GetCursorPosX() + ((ImGui.GetWindowWidth() / 2) - 8))
             ImGui.Text(tostring(ME.PctMana() or 0))
         end
+        local yPos = ImGui.GetCursorPosY()
         --My Endurance bar
         ImGui.PushStyleColor(ImGuiCol.PlotHistogram,(COLOR.color('yellow2')))
         ImGui.ProgressBar(((tonumber(ME.PctEndurance() or 0)) / 100), ImGui.GetContentRegionAvail(), progressSize, '##pctEndurance')
         ImGui.PopStyleColor()
-        ImGui.SetCursorPosY(ImGui.GetCursorPosY() - 15)
+        ImGui.SetCursorPosY(yPos)
         ImGui.SetCursorPosX(ImGui.GetCursorPosX() + ((ImGui.GetWindowWidth() / 2) - 8))
         ImGui.Text(tostring(ME.PctEndurance() or 0))
         ImGui.Separator()
@@ -582,6 +589,7 @@ function GUI_Target(open)
             local tLvl = TARGET.Level() or 0
             local tBodyType = TARGET.Body.Name() or '?'
             --Target Health Bar
+            ImGui.BeginGroup()
             if TARGET.PctHPs() < 25 then
                 ImGui.PushStyleColor(ImGuiCol.PlotHistogram,(COLOR.color('orange')))
             else
@@ -589,13 +597,15 @@ function GUI_Target(open)
             end
             ImGui.ProgressBar(((tonumber(TARGET.PctHPs() or 0)) / 100), ImGui.GetContentRegionAvail(), progressSize * 3,'##' .. TARGET.PctHPs())
             ImGui.PopStyleColor()
-            ImGui.SetWindowFontScale(ZoomLvl * 0.9)
+            
             if ImGui.IsItemHovered() then
+                ImGui.SetWindowFontScale(ZoomLvl)
                 ImGui.BeginTooltip()
                 ImGui.Text(string.format("Name: %s\t Lvl: %s\nClass: %s\nType: %s", targetName,tLvl,tClass,tBodyType ))
                 ImGui.EndTooltip()
             end
-            ImGui.SetCursorPosY(ImGui.GetCursorPosY() - 37)
+            ImGui.SetWindowFontScale(ZoomLvl * 0.9)
+            ImGui.SetCursorPosY(ImGui.GetCursorPosY() - (progressSize * 3 + 7))
             ImGui.SetCursorPosX(9)
             if ImGui.BeginTable("##targetInfoOverlay", 2, tPlayerFlags) then
                 ImGui.TableSetupColumn("##col1", ImGuiTableColumnFlags.NoResize, (ImGui.GetContentRegionAvail() * .5) - 8)
@@ -603,8 +613,6 @@ function GUI_Target(open)
                 -- First Row: Name, con, distance
                 ImGui.TableNextRow()
                 ImGui.TableSetColumnIndex(0) -- Name and CON in the first column
-                ImGui.SetWindowFontScale(ZoomLvl * 0.9)
-
                 ImGui.Text(targetName)
                 -- Distance in the second column
                 ImGui.TableSetColumnIndex(1)
@@ -631,10 +639,13 @@ function GUI_Target(open)
                 ImGui.Text(tostring(TARGET.PctHPs()) .. '%')
                 ImGui.EndTable()
             end
+            ImGui.EndGroup()
             ImGui.SetWindowFontScale(ZoomLvl * 0.75)
             ImGui.Separator()
             --Aggro % Bar
             if (TARGET.Aggressive) then
+                local yPos = ImGui.GetCursorPosY()
+                ImGui.BeginGroup()
                 if TARGET.PctAggro() < 100 then 
                     ImGui.PushStyleColor(ImGuiCol.PlotHistogram,(COLOR.color('orange')))
                 else
@@ -644,23 +655,26 @@ function GUI_Target(open)
                     '##pctAggro')
                 ImGui.PopStyleColor()
                 --Secondary Aggro Person
+                
                 if (TARGET.SecondaryAggroPlayer() ~= nil) then
-                    ImGui.SetCursorPosY(ImGui.GetCursorPosY() - 15)
+                    ImGui.SetCursorPosY(yPos)
                     ImGui.SetCursorPosX(ImGui.GetCursorPosX() + 5)
                     ImGui.Text(TARGET.SecondaryAggroPlayer())
                 end
                 --Aggro % Label middle of bar
-                ImGui.SetCursorPosY(ImGui.GetCursorPosY() - 15)
+                ImGui.SetCursorPosY(yPos)
                 ImGui.SetCursorPosX(ImGui.GetCursorPosX() + ((ImGui.GetWindowWidth() / 2) - 8))
                 ImGui.Text(TARGET.PctAggro())
                 if (TARGET.SecondaryAggroPlayer() ~= nil) then
-                    ImGui.SetCursorPosY(ImGui.GetCursorPosY() - 18)
+                    ImGui.SetCursorPosY(yPos)
                     ImGui.SetCursorPosX(ImGui.GetWindowWidth() - 40)
                     ImGui.Text(TARGET.SecondaryPctAggro())
                 end
+                ImGui.EndGroup()
             else
                 ImGui.Text('')
             end
+
             ImGui.EndGroup()
             if ImGui.IsItemHovered() and ImGui.IsMouseReleased(ImGuiMouseButton.Left) then
                 if mq.TLO.Cursor() then
