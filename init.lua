@@ -395,6 +395,7 @@ function GUI_Target(open)
     end
     -- ImGui.BeginGroup()
     if ImGui.BeginMenuBar() then
+        if ZoomLvl > 1.25 then ImGui.PushStyleVar(ImGuiStyleVar.FramePadding, 4,7) end
         local lockedIcon = locked and Icons.FA_LOCK .. '##lockTabButton_MyChat' or
         Icons.FA_UNLOCK .. '##lockTablButton_MyChat'
         if ImGui.Button(lockedIcon) then
@@ -415,7 +416,7 @@ function GUI_Target(open)
         end
         ImGui.EndMenuBar()
     end
-    
+    ImGui.PushStyleVar(ImGuiStyleVar.FramePadding, 4,3)
         -- Combat Status
         if ME.Combat() then
             ImGui.SetNextItemAllowOverlap()
@@ -439,7 +440,7 @@ function GUI_Target(open)
         ImGui.BeginGroup()
         if ImGui.BeginTable("##playerInfo", 4, tPlayerFlags) then
             ImGui.TableSetupColumn("##tName", ImGuiTableColumnFlags.NoResize, (ImGui.GetContentRegionAvail() * .5))
-            ImGui.TableSetupColumn("##tVis", ImGuiTableColumnFlags.NoResize, 16)
+            ImGui.TableSetupColumn("##tVis", ImGuiTableColumnFlags.NoResize, 24)
             ImGui.TableSetupColumn("##tIcons", ImGuiTableColumnFlags.WidthStretch, 80) --ImGui.GetContentRegionAvail()*.25)
             ImGui.TableSetupColumn("##tLvl", ImGuiTableColumnFlags.NoResize, 30)
             ImGui.TableNextRow()
@@ -694,7 +695,7 @@ function GUI_Target(open)
         else
             ImGui.Text('')
         end
-        if StyleCount > 0 then ImGui.PopStyleVar(StyleCount) end
+        if StyleCount > 0 then ImGui.PopStyleVar(StyleCount) else ImGui.PopStyleVar(1) end
         if ColorCount > 0 then ImGui.PopStyleColor(ColorCount) end
         ImGui.Spacing()
         ImGui.SetWindowFontScale(1)
