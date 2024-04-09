@@ -24,10 +24,10 @@ local pulse = true
 local iconSize = 26
 local flashAlpha = 1
 local rise = true
-local ShowGUI, locked = true, false
+local ShowGUI, locked, flashBorder = true, false, true
 local openConfigGUI, openGUI = false, true
 local ver = "v1.69"
-local tPlayerFlags = bit32.bor(ImGuiTableFlags.NoBorders, ImGuiTableFlags.NoBordersInBody, ImGuiTableFlags.NoPadInnerX,
+local tPlayerFlags = bit32.bor(ImGuiTableFlags.NoBordersInBody, ImGuiTableFlags.NoPadInnerX,
     ImGuiTableFlags.NoPadOuterX, ImGuiTableFlags.Resizable, ImGuiTableFlags.SizingFixedFit)
 local progressSize = 10
 local theme = {}
@@ -37,14 +37,16 @@ local ColorCount, ColorCountConf, StyleCount, StyleCountConf = 0, 0, 0, 0
 local themeName = 'Default'
 local script = 'PlayerTarg'
 local defaults, settings, temp = {}, {}, {}
-local themeRowBG = {}
+local themeRowBG, themeBorderBG = {}, {}
 themeRowBG = {1,1,1,0}
+themeBorderBG = {1,1,1,1}
 
 defaults = {
         Scale = 1.0,
         LoadTheme = 'Default',
         locked = false,
         iconSize = 26,
+        FlashBorder = true,
         ProgressSize = 10,
 }
 local configFile = mq.configDir .. '/MyUI_Configs.lua'
@@ -105,6 +107,9 @@ local function loadSettings()
     if settings[script].locked == nil then
         settings[script].locked = false
     end
+    if settings[script].FlashBorder == nil then
+        settings[script].FlashBorder = true
+    end
 
     if settings[script].Scale == nil then
         settings[script].Scale = 1
@@ -121,7 +126,7 @@ local function loadSettings()
     if settings[script].ProgressSize == nil then
         settings[script].ProgressSize = progressSize
     end
-
+    flashBorder = settings[script].FlashBorder
     progressSize = settings[script].ProgressSize
     iconSize = settings[script].IconSize
     locked = settings[script].locked
@@ -144,7 +149,9 @@ local function DrawTheme(themeName)
             for pID, cData in pairs(theme.Theme[tID].Color) do
                 ImGui.PushStyleColor(pID, ImVec4(cData.Color[1], cData.Color[2], cData.Color[3], cData.Color[4]))
                 ColorCounter = ColorCounter + 1
-                if cData.PropertyName == 'TableRowBg' then
+                if cData.PropertyName == 'Border' then
+                    themeBorderBG = {cData.Color[1], cData.Color[2], cData.Color[3], cData.Color[4]}
+                elseif cData.PropertyName == 'TableRowBg' then
                     themeRowBG = {cData.Color[1], cData.Color[2], cData.Color[3], cData.Color[4]}
                 end
             end
@@ -237,13 +244,13 @@ function DrawStatusIcon(iconID, type, txt)
     animSpell:SetTextureCell(iconID or 0)
     animItem:SetTextureCell(iconID or 3996)
     if type == 'item' then
-        ImGui.DrawTextureAnimation(animItem, iconSize - 5, iconSize - 5)
+        ImGui.DrawTextureAnimation(animItem, iconSize - 9, iconSize - 9)
     elseif type == 'pwcs' then
         local animPWCS = mq.FindTextureAnimation(iconID)
         animPWCS:SetTextureCell(iconID)
-        ImGui.DrawTextureAnimation(animPWCS, iconSize - 5, iconSize - 5)
+        ImGui.DrawTextureAnimation(animPWCS, iconSize - 9, iconSize - 9)
     else
-        ImGui.DrawTextureAnimation(animSpell, iconSize - 5, iconSize - 5)
+        ImGui.DrawTextureAnimation(animSpell, iconSize - 9, iconSize - 9)
     end
         if ImGui.IsItemHovered() then
             ImGui.SetWindowFontScale(ZoomLvl)
@@ -361,10 +368,14 @@ local function PlayerTargConf_GUI(open)
     if progressSize ~= tmpPrgSz then
         progressSize = tmpPrgSz
     end
+
+    flashBorder = ImGui.Checkbox('Flash Border', flashBorder)
+
     ImGui.SeparatorText("Save and Close##"..script)
     if ImGui.Button('Save and Close##'..script) then
         openConfigGUI = false
         settings = dofile(configFile)
+        settings[script].FlashBorder = flashBorder
         settings[script].ProgressSize = progressSize
         settings[script].Scale = ZoomLvl
         settings[script].IconSize = iconSize
@@ -447,6 +458,8 @@ function GUI_Target(open)
         --ImGui.SetCursorPosY(10)
         -- Player Information
         ImGui.BeginGroup()
+        local tPFlags = tPlayerFlags
+        local cFlag = bit32.bor(ImGuiChildFlags.AlwaysAutoResize)
         if ME.Combat() then
             if cRise then
                 cAlpha = cAlpha + 5
@@ -458,11 +471,28 @@ function GUI_Target(open)
             elseif cAlpha < 15 then
                 cRise = true
             end
-            ImGui.PushStyleColor(ImGuiCol.TableRowBg,0.9, 0.1, 0.1, (cAlpha/255))
+            if flashBorder then
+                ImGui.PushStyleColor(ImGuiCol.Border,0.9, 0.1, 0.1, (cAlpha/255))
+                cFlag = bit32.bor(ImGuiChildFlags.Border,cFlag)
+                tPFlags = tPlayerFlags
+            else
+                ImGui.PushStyleColor(ImGuiCol.TableRowBg,0.9, 0.1, 0.1, (cAlpha/255))
+                tPFlags = bit32.bor(ImGuiTableFlags.RowBg, tPlayerFlags)
+                cFlag = bit32.bor(ImGuiChildFlags.AlwaysAutoResize)
+            end
         else
-            ImGui.PushStyleColor(ImGuiCol.TableRowBg,themeRowBG[1], themeRowBG[2], themeRowBG[3], themeRowBG[4])
+            if flashBorder then
+                ImGui.PushStyleColor(ImGuiCol.Border,themeBorderBG[1], themeBorderBG[2], themeBorderBG[3], themeBorderBG[4])
+                cFlag = bit32.bor(ImGuiChildFlags.Border,cFlag)
+                tPFlags = tPlayerFlags
+            else
+                ImGui.PushStyleColor(ImGuiCol.TableRowBg,themeRowBG[1], themeRowBG[2], themeRowBG[3], themeRowBG[4])
+                tPFlags = bit32.bor(ImGuiTableFlags.RowBg, tPlayerFlags)
+                cFlag = bit32.bor(ImGuiChildFlags.AlwaysAutoResize)
+            end
         end
-        if ImGui.BeginTable("##playerInfo", 4, bit32.bor( ImGuiTableFlags.RowBg,tPlayerFlags)) then
+        if flashBorder then ImGui.BeginChild('pInfo##', 0,(iconSize*1.8*ZoomLvl),cFlag) end
+        if ImGui.BeginTable("##playerInfo", 4, tPFlags) then
             ImGui.TableSetupColumn("##tName", ImGuiTableColumnFlags.NoResize, (ImGui.GetContentRegionAvail() * .5))
             ImGui.TableSetupColumn("##tVis", ImGuiTableColumnFlags.NoResize, 24)
             ImGui.TableSetupColumn("##tIcons", ImGuiTableColumnFlags.WidthStretch, 80) --ImGui.GetContentRegionAvail()*.25)
@@ -558,8 +588,10 @@ function GUI_Target(open)
             end
             ImGui.PopStyleVar()
             ImGui.EndTable()
-            ImGui.PopStyleColor()
+            
         end
+        if flashBorder then ImGui.EndChild() end
+        ImGui.PopStyleColor()
         ImGui.Separator()
         -- My Health Bar
         local yPos = ImGui.GetCursorPosY()
