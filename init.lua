@@ -37,6 +37,9 @@ local ColorCount, ColorCountConf, StyleCount, StyleCountConf = 0, 0, 0, 0
 local themeName = 'Default'
 local script = 'PlayerTarg'
 local defaults, settings, temp = {}, {}, {}
+local themeRowBG = {}
+themeRowBG = {1,1,1,0}
+
 defaults = {
         Scale = 1.0,
         LoadTheme = 'Default',
@@ -141,6 +144,9 @@ local function DrawTheme(themeName)
             for pID, cData in pairs(theme.Theme[tID].Color) do
                 ImGui.PushStyleColor(pID, ImVec4(cData.Color[1], cData.Color[2], cData.Color[3], cData.Color[4]))
                 ColorCounter = ColorCounter + 1
+                if cData.PropertyName == 'TableRowBg' then
+                    themeRowBG = {cData.Color[1], cData.Color[2], cData.Color[3], cData.Color[4]}
+                end
             end
             if tData['Style'] ~= nil then
                 if next(tData['Style']) ~= nil then
@@ -372,6 +378,8 @@ local function PlayerTargConf_GUI(open)
 
 end
 
+local cRise = false
+local cAlpha = 255
 function GUI_Target(open)
     if not ShowGUI then return end
     if TLO.Me.Zoning() then return end
@@ -418,32 +426,50 @@ function GUI_Target(open)
     end
     ImGui.PushStyleVar(ImGuiStyleVar.FramePadding, 4,3)
         -- Combat Status
-        if ME.Combat() then
-            ImGui.SetNextItemAllowOverlap()
-            --ImGui.SetCursorPosY(10)
+        -- if ME.Combat() then
+        --     ImGui.SetNextItemAllowOverlap()
+        --     --ImGui.SetCursorPosY(10)
             ImGui.SetCursorPosX((ImGui.GetContentRegionAvail() / 2) - 22)
-            if pulse then
-                ImGui.PushStyleColor(ImGuiCol.PlotHistogram,(COLOR.color('pink')))
-                pulse = false
-            else
-                ImGui.PushStyleColor(ImGuiCol.PlotHistogram,(COLOR.color('red')))
-                pulse = true
-            end
-            ImGui.ProgressBar(1, iconSize - 5, iconSize - 6, '##c')
-            --ImGui.Text(Icons.MD_LENS)
-            ImGui.PopStyleColor()
-        end
+        --     if pulse then
+        --         ImGui.PushStyleColor(ImGuiCol.PlotHistogram,(COLOR.color('pink')))
+        --         pulse = false
+        --     else
+        --         ImGui.PushStyleColor(ImGuiCol.PlotHistogram,(COLOR.color('red')))
+        --         pulse = true
+        --     end
+        --     ImGui.ProgressBar(1, iconSize - 5, iconSize - 6, '##c')
+        --     --ImGui.Text(Icons.MD_LENS)
+        --     ImGui.PopStyleColor()
+        -- end
+        ImGui.Dummy(iconSize - 5, iconSize - 6)
         ImGui.SameLine()
         ImGui.SetCursorPosX(5)
         --ImGui.SetCursorPosY(10)
         -- Player Information
         ImGui.BeginGroup()
-        if ImGui.BeginTable("##playerInfo", 4, tPlayerFlags) then
+        math.randomseed(mq.gettime())
+        if ME.Combat() then
+            if cRise then
+                cAlpha = cAlpha + 5
+            else
+                cAlpha = cAlpha - 5
+            end
+            if cAlpha >= 250 then
+                cRise = false
+            elseif cAlpha < 15 then
+                cRise = true
+            end
+            ImGui.PushStyleColor(ImGuiCol.TableRowBg,0.9, 0.1, 0.1, (cAlpha/255))
+        else
+            ImGui.PushStyleColor(ImGuiCol.TableRowBg,themeRowBG[1], themeRowBG[2], themeRowBG[3], themeRowBG[4])
+        end
+        if ImGui.BeginTable("##playerInfo", 4, bit32.bor( ImGuiTableFlags.RowBg,tPlayerFlags)) then
             ImGui.TableSetupColumn("##tName", ImGuiTableColumnFlags.NoResize, (ImGui.GetContentRegionAvail() * .5))
             ImGui.TableSetupColumn("##tVis", ImGuiTableColumnFlags.NoResize, 24)
             ImGui.TableSetupColumn("##tIcons", ImGuiTableColumnFlags.WidthStretch, 80) --ImGui.GetContentRegionAvail()*.25)
             ImGui.TableSetupColumn("##tLvl", ImGuiTableColumnFlags.NoResize, 30)
             ImGui.TableNextRow()
+
             -- Name
             ImGui.SetWindowFontScale(ZoomLvl)
             ImGui.TableSetColumnIndex(0)
@@ -533,6 +559,7 @@ function GUI_Target(open)
             end
             ImGui.PopStyleVar()
             ImGui.EndTable()
+            ImGui.PopStyleColor()
         end
         ImGui.Separator()
         -- My Health Bar
@@ -726,5 +753,5 @@ local function MainLoop()
 end
 
 init()
-printf("\ag %s \aw[\ayPlayer Targ\aw] ::\a-t Version \aw::\ay %s \at Loaded",TLO.Time(), ver)
+printf("\ag %s \aw[\ayPlayer Targ\aw] ::\a-t Loaded",TLO.Time())
 MainLoop()
