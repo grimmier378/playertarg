@@ -237,13 +237,13 @@ function DrawStatusIcon(iconID, type, txt)
     animSpell:SetTextureCell(iconID or 0)
     animItem:SetTextureCell(iconID or 3996)
     if type == 'item' then
-        ImGui.DrawTextureAnimation(animItem, iconSize - 11, iconSize - 11)
+        ImGui.DrawTextureAnimation(animItem, iconSize - 5, iconSize - 5)
     elseif type == 'pwcs' then
         local animPWCS = mq.FindTextureAnimation(iconID)
         animPWCS:SetTextureCell(iconID)
-        ImGui.DrawTextureAnimation(animPWCS, iconSize - 11, iconSize - 11)
+        ImGui.DrawTextureAnimation(animPWCS, iconSize - 5, iconSize - 5)
     else
-        ImGui.DrawTextureAnimation(animSpell, iconSize - 11, iconSize - 11)
+        ImGui.DrawTextureAnimation(animSpell, iconSize - 5, iconSize - 5)
     end
         if ImGui.IsItemHovered() then
             ImGui.SetWindowFontScale(ZoomLvl)
@@ -447,7 +447,6 @@ function GUI_Target(open)
         --ImGui.SetCursorPosY(10)
         -- Player Information
         ImGui.BeginGroup()
-        math.randomseed(mq.gettime())
         if ME.Combat() then
             if cRise then
                 cAlpha = cAlpha + 5
