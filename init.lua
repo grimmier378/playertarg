@@ -370,6 +370,20 @@ local function PlayerTargConf_GUI(open)
     end
 
     flashBorder = ImGui.Checkbox('Flash Border', flashBorder)
+    ImGui.SameLine()
+    if ImGui.Button('Reset Defaults##'..script) then
+        settings = dofile(configFile)
+        flashBorder = false
+        progressSize = 10
+        ZoomLvl = 1
+        iconSize = 26
+        themeName = 'Default'
+        settings[script].FlashBorder = flashBorder
+        settings[script].ProgressSize = progressSize
+        settings[script].Scale = ZoomLvl
+        settings[script].IconSize = iconSize
+        settings[script].LoadTheme = themeName
+    end
 
     ImGui.SeparatorText("Save and Close##"..script)
     if ImGui.Button('Save and Close##'..script) then
