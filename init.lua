@@ -461,12 +461,13 @@ function GUI_Target(open)
         end
         ImGui.EndMenuBar()
     end
-    ImGui.PushStyleVar(ImGuiStyleVar.FramePadding, 4,3)
+    
     ImGui.SetCursorPosX((ImGui.GetContentRegionAvail() / 2) - 22)
     ImGui.Dummy(iconSize - 5, iconSize - 6)
     ImGui.SameLine()
     ImGui.SetCursorPosX(5)
     -- Player Information
+    -- ImGui.PushStyleVar(ImGuiStyleVar.CellPadding)
     ImGui.BeginGroup()
     local tPFlags = tPlayerFlags
     local cFlag = bit32.bor(ImGuiChildFlags.AlwaysAutoResize)
@@ -501,7 +502,8 @@ function GUI_Target(open)
             cFlag = bit32.bor(ImGuiChildFlags.AlwaysAutoResize)
         end
     end
-    if flashBorder then ImGui.BeginChild('pInfo##', 0,(iconSize*1.8*ZoomLvl),cFlag) end
+    ImGui.PushStyleVar(ImGuiStyleVar.WindowPadding, 1,1)
+    if flashBorder then ImGui.BeginChild('pInfo##', 0,((iconSize+4)*ZoomLvl),cFlag) end
     if ImGui.BeginTable("##playerInfo", 4, tPFlags) then
         ImGui.TableSetupColumn("##tName", ImGuiTableColumnFlags.NoResize, (ImGui.GetContentRegionAvail() * .5))
         ImGui.TableSetupColumn("##tVis", ImGuiTableColumnFlags.NoResize, 24)
@@ -513,7 +515,7 @@ function GUI_Target(open)
         ImGui.SetWindowFontScale(ZoomLvl)
         ImGui.TableSetColumnIndex(0)
         local meName = ME.DisplayName()
-        ImGui.Text(meName)
+        ImGui.Text(" %s",meName)
         local combatState = ME.CombatState()
         if ME.Poisoned() and ME.Diseased() then
             ImGui.SameLine(ImGui.GetColumnWidth() - 45)
@@ -601,6 +603,8 @@ function GUI_Target(open)
         
     end
     if flashBorder then ImGui.EndChild() end
+    ImGui.PopStyleVar()
+    ImGui.PushStyleVar(ImGuiStyleVar.FramePadding, 4,3)
     ImGui.PopStyleColor()
     ImGui.Separator()
     -- My Health Bar
