@@ -29,6 +29,8 @@ local configFile = mq.configDir .. '/MyUI_Configs.lua'
 local ColorCount, ColorCountConf, StyleCount, StyleCountConf = 0, 0, 0, 0
 local themeName = 'Default'
 local script = 'PlayerTarg'
+local pulseSpeed = 5
+local combatPulseSpeed = 10
 
 -- Flags
 
@@ -47,6 +49,9 @@ defaults = {
         LoadTheme = 'Default',
         locked = false,
         iconSize = 26,
+        doPulse = true,
+        pulseSpeed = 5,
+        combatPulseSpeed = 10,
         FlashBorder = true,
         ProgressSize = 10,
 }
@@ -107,6 +112,18 @@ local function loadSettings()
 
     local newSetting = false
 
+    if settings[script].doPulse == nil then
+        settings[script].doPulse = true
+        newSetting = true
+    end
+    if settings[script].pulseSpeed == nil then
+        settings[script].pulseSpeed = 5
+        newSetting = true
+    end
+    if settings[script].combatPulseSpeed == nil then
+        settings[script].combatPulseSpeed = 10
+        newSetting = true
+    end
     if settings[script].locked == nil then
         settings[script].locked = false
         newSetting = true
@@ -135,6 +152,10 @@ local function loadSettings()
         settings[script].ProgressSize = progressSize
         newSetting = true
     end
+    
+    combatPulseSpeed = settings[script].combatPulseSpeed
+    pulseSpeed = settings[script].pulseSpeed
+    pulse = settings[script].doPulse
     flashBorder = settings[script].FlashBorder
     progressSize = settings[script].ProgressSize
     iconSize = settings[script].IconSize
@@ -143,6 +164,43 @@ local function loadSettings()
     themeName = settings[script].LoadTheme
 
     if newSetting then writeSettings(configFile, settings) end
+end
+
+local lastTime = os.clock()
+local frameTime = 1 / 60 -- time for each frame at 60 fps
+local function pulseIcon(speed)
+    local currentTime = os.clock()
+    if currentTime - lastTime < frameTime then
+        return -- exit if not enough time has passed
+    end
+    lastTime = currentTime -- update the last time
+    if rise == true then
+        flashAlpha = flashAlpha + speed
+        elseif rise == false then
+        flashAlpha = flashAlpha - speed
+    end
+    if flashAlpha == 200 then rise = false end
+    if flashAlpha == 10 then rise = true end
+end
+
+local lastTimeCombat = os.clock()
+local frameTimeCombat = 1 / 120 -- time for each frame at 60 fps
+local function pulseCombat(combatPulseSpeed)
+    local currentTime = os.clock()
+    if currentTime - lastTimeCombat < frameTimeCombat then
+        return -- exit if not enough time has passed
+    end
+    lastTimeCombat = currentTime -- update the last time
+    if cRise then
+        cAlpha = cAlpha + combatPulseSpeed
+    else
+        cAlpha = cAlpha - combatPulseSpeed
+    end
+    if cAlpha >= 250 then
+        cRise = false
+    elseif cAlpha < 10 then
+        cRise = true
+    end
 end
 
 ---comment
@@ -224,7 +282,7 @@ function DrawInspectableSpellIcon(iconID, spell, i)
     local sName = spell.Name() or '??'
     local sDur = spell.Duration.TotalSeconds() or 0
     ImGui.PushID(tostring(iconID) .. sName .. "_invis_btn")
-    if sDur < 18 and sDur > 0 then
+    if sDur < 18 and sDur > 0 and pulse then
         local flashColor = IM_COL32(0, 0, 0, flashAlpha)
         ImGui.GetWindowDrawList():AddRectFilled(ImGui.GetCursorScreenPosVec() +1,
             ImGui.GetCursorScreenPosVec() + iconSize -4, flashColor)
@@ -314,7 +372,6 @@ local function getConLevel(spawn)
 end
 
 -- GUI
-
 local function PlayerTargConf_GUI(open)
     if not openConfigGUI then return end
     ColorCountConf = 0
@@ -380,7 +437,24 @@ local function PlayerTargConf_GUI(open)
     end
 
     flashBorder = ImGui.Checkbox('Flash Border', flashBorder)
-    ImGui.SameLine()
+    local tmpPulse = pulse
+    tmpPulse = ImGui.Checkbox('Pulse Icons', tmpPulse)
+    if pulse ~= tmpPulse then
+        pulse = tmpPulse
+    end
+    if pulse then
+        local tmpSpeed = pulseSpeed
+        tmpSpeed = ImGui.SliderInt('Pulse Speed##'..script, tmpSpeed, 1, 50)
+        if pulseSpeed ~= tmpSpeed then
+            pulseSpeed = tmpSpeed
+        end
+    end
+    local tmpCmbtSpeed = combatPulseSpeed
+    tmpCmbtSpeed = ImGui.SliderInt('Combat Pulse Speed##'..script, tmpCmbtSpeed, 1, 50)
+    if combatPulseSpeed ~= tmpCmbtSpeed then
+        combatPulseSpeed = tmpCmbtSpeed
+    end
+
     if ImGui.Button('Reset Defaults##'..script) then
         settings = dofile(configFile)
         flashBorder = false
@@ -404,6 +478,9 @@ local function PlayerTargConf_GUI(open)
         settings[script].Scale = ZoomLvl
         settings[script].IconSize = iconSize
         settings[script].LoadTheme = themeName
+        settings[script].doPulse = pulse
+        settings[script].pulseSpeed = pulseSpeed
+        settings[script].combatPulseSpeed = combatPulseSpeed
         writeSettings(configFile,settings)
     end
     if StyleCountConf > 0 then ImGui.PopStyleVar(StyleCountConf) end
@@ -472,16 +549,6 @@ function GUI_Target(open)
     local tPFlags = tPlayerFlags
     local cFlag = bit32.bor(ImGuiChildFlags.AlwaysAutoResize)
     if ME.Combat() then
-        if cRise then
-            cAlpha = cAlpha + 10
-        else
-            cAlpha = cAlpha - 10
-        end
-        if cAlpha >= 250 then
-            cRise = false
-        elseif cAlpha < 15 then
-            cRise = true
-        end
         if flashBorder then
             ImGui.PushStyleColor(ImGuiCol.Border,0.9, 0.1, 0.1, (cAlpha/255))
             cFlag = bit32.bor(ImGuiChildFlags.Border,cFlag)
@@ -787,7 +854,9 @@ end
 local function MainLoop()
     while running do
         if TLO.Window('CharacterListWnd').Open() then return false end
-        mq.delay(1000)
+        mq.delay(100)
+        pulseIcon(pulseSpeed)
+        pulseCombat(combatPulseSpeed)
         if ME.Zoning() then
             ShowGUI = false
         else
