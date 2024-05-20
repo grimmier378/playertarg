@@ -169,6 +169,7 @@ end
 local lastTime = os.clock()
 local frameTime = 1 / 60 -- time for each frame at 60 fps
 local function pulseIcon(speed)
+    if speed == 0 then flashAlpha = 0 pulse = false return end
     local currentTime = os.clock()
     if currentTime - lastTime < frameTime then
         return -- exit if not enough time has passed
@@ -186,6 +187,7 @@ end
 local lastTimeCombat = os.clock()
 local frameTimeCombat = 1 / 120 -- time for each frame at 60 fps
 local function pulseCombat(combatPulseSpeed)
+    if combatPulseSpeed == 0 then cAlpha = 255 return end
     local currentTime = os.clock()
     if currentTime - lastTimeCombat < frameTimeCombat then
         return -- exit if not enough time has passed
@@ -435,22 +437,28 @@ local function PlayerTargConf_GUI(open)
     if progressSize ~= tmpPrgSz then
         progressSize = tmpPrgSz
     end
-
+    ImGui.SeparatorText("Pulse Settings##"..script)
     flashBorder = ImGui.Checkbox('Flash Border', flashBorder)
+    ImGui.SameLine()
     local tmpPulse = pulse
-    tmpPulse = ImGui.Checkbox('Pulse Icons', tmpPulse)
+    tmpPulse , _= ImGui.Checkbox('Pulse Icons', tmpPulse)
+    if _ then
+        if tmpPulse == true and pulseSpeed == 0 then
+            pulseSpeed = defaults.pulseSpeed
+        end
+    end
     if pulse ~= tmpPulse then
         pulse = tmpPulse
     end
     if pulse then
         local tmpSpeed = pulseSpeed
-        tmpSpeed = ImGui.SliderInt('Pulse Speed##'..script, tmpSpeed, 1, 50)
+        tmpSpeed = ImGui.SliderInt('Icon Pulse Speed##'..script, tmpSpeed, 0, 50)
         if pulseSpeed ~= tmpSpeed then
             pulseSpeed = tmpSpeed
         end
     end
     local tmpCmbtSpeed = combatPulseSpeed
-    tmpCmbtSpeed = ImGui.SliderInt('Combat Pulse Speed##'..script, tmpCmbtSpeed, 1, 50)
+    tmpCmbtSpeed = ImGui.SliderInt('Combat Pulse Speed##'..script, tmpCmbtSpeed, 0, 50)
     if combatPulseSpeed ~= tmpCmbtSpeed then
         combatPulseSpeed = tmpCmbtSpeed
     end
