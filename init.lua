@@ -31,6 +31,10 @@ local themeName = 'Default'
 local script = 'PlayerTarg'
 local pulseSpeed = 5
 local combatPulseSpeed = 10
+local colorHpMax = {0.992, 0.138, 0.138, 1.000}
+local colorHpMin = {0.551, 0.207, 0.962, 1.000}
+local colorMpMax = {0.231, 0.707, 0.938, 1.000}
+local colorMpMin = {0.600, 0.231, 0.938, 1.000}
 -- Flags
 
 local tPlayerFlags = bit32.bor(ImGuiTableFlags.NoBordersInBody, ImGuiTableFlags.NoPadInnerX,
@@ -188,6 +192,10 @@ local function loadSettings()
         newSetting = true
     end
     
+    colorHpMax = settings[script].ColorHPMax
+    colorHpMin = settings[script].ColorHPMin
+    colorMpMax = settings[script].ColorMPMax
+    colorMpMin = settings[script].ColorMPMin
     combatPulseSpeed = settings[script].combatPulseSpeed
     pulseSpeed = settings[script].pulseSpeed
     pulse = settings[script].doPulse
@@ -538,10 +546,10 @@ local function PlayerTargConf_GUI(open)
     end
     ImGui.SameLine()
     ImGui.SetNextItemWidth(60)
-    settings[script].ColorHPMin = ImGui.ColorEdit4("HP Min Color##"..script, settings[script].ColorHPMin, bit32.bor(ImGuiColorEditFlags.AlphaBar, ImGuiColorEditFlags.NoInputs))
+    colorHpMin = ImGui.ColorEdit4("HP Min Color##"..script, colorHpMin, bit32.bor(ImGuiColorEditFlags.AlphaBar, ImGuiColorEditFlags.NoInputs))
     ImGui.SameLine()
     ImGui.SetNextItemWidth(60)
-    settings[script].ColorHPMax = ImGui.ColorEdit4("HP Max Color##"..script, settings[script].ColorHPMax, bit32.bor(ImGuiColorEditFlags.AlphaBar, ImGuiColorEditFlags.NoInputs))
+    colorHpMax = ImGui.ColorEdit4("HP Max Color##"..script, colorHpMax, bit32.bor(ImGuiColorEditFlags.AlphaBar, ImGuiColorEditFlags.NoInputs))
 
     tmpDMP = ImGui.Checkbox('Dynamic Mana Bar', tmpDMP)
     if tmpDMP ~= settings[script].DynamicMP then
@@ -549,16 +557,19 @@ local function PlayerTargConf_GUI(open)
     end
     ImGui.SameLine()
     ImGui.SetNextItemWidth(60)
-    settings[script].ColorMPMin = ImGui.ColorEdit4("Mana Min Color##"..script, settings[script].ColorMPMin, bit32.bor( ImGuiColorEditFlags.NoInputs))
+    colorMpMin = ImGui.ColorEdit4("Mana Min Color##"..script, colorMpMin, bit32.bor( ImGuiColorEditFlags.NoInputs))
     ImGui.SameLine()
     ImGui.SetNextItemWidth(60)
-    settings[script].ColorMPMax = ImGui.ColorEdit4("Mana Max Color##"..script, settings[script].ColorMPMax, bit32.bor( ImGuiColorEditFlags.NoInputs))
+    colorMpMax = ImGui.ColorEdit4("Mana Max Color##"..script, colorMpMax, bit32.bor( ImGuiColorEditFlags.NoInputs))
 
     ImGui.SeparatorText("Save and Close##"..script)
     if ImGui.Button('Save and Close##'..script) then
         openConfigGUI = false
         settings = dofile(configFile)
-
+        settings[script].ColorHPMax = colorHpMax
+        settings[script].ColorHPMin = colorHpMin
+        settings[script].ColorMPMax = colorMpMax
+        settings[script].ColorMPMin = colorMpMin
         settings[script].DynamicHP = tmpDHP
         settings[script].DynamicMP = tmpDMP
         settings[script].FlashBorder = flashBorder
