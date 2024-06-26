@@ -31,7 +31,7 @@ local themeName = 'Default'
 local script = 'PlayerTarg'
 local pulseSpeed = 5
 local combatPulseSpeed = 10
-
+local r,g,b,a
 -- Flags
 
 local tPlayerFlags = bit32.bor(ImGuiTableFlags.NoBordersInBody, ImGuiTableFlags.NoPadInnerX,
@@ -52,6 +52,8 @@ defaults = {
         doPulse = true,
         pulseSpeed = 5,
         combatPulseSpeed = 10,
+        DynamicHP = false,
+        DynamicMP = false,
         FlashBorder = true,
         ProgressSize = 10,
 }
@@ -140,6 +142,16 @@ local function loadSettings()
 
     if settings[script].IconSize == nil then
         settings[script].IconSize = 26
+        newSetting = true
+    end
+
+    if settings[script].DynamicHP == nil then
+        settings[script].DynamicHP = false
+        newSetting = true
+    end
+
+    if settings[script].DynamicMP == nil then
+        settings[script].DynamicMP = false
         newSetting = true
     end
 
@@ -477,10 +489,24 @@ local function PlayerTargConf_GUI(open)
         settings[script].LoadTheme = themeName
     end
 
+    ImGui.SeparatorText("Dynamic Bar Colors##"..script)
+    local tmpDHP = settings[script].DynamicHP
+    local tmpDMP = settings[script].DynamicMP
+    tmpDHP = ImGui.Checkbox('Dynamic HP Bar', tmpDHP)
+    tmpDMP = ImGui.Checkbox('Dynamic Mana Bar', tmpDMP)
+    if tmpDHP ~= settings[script].DynamicHP then
+        settings[script].DynamicHP = tmpDHP
+    end
+    if tmpDMP ~= settings[script].DynamicMP then
+        settings[script].DynamicMP = tmpDMP
+    end
+
     ImGui.SeparatorText("Save and Close##"..script)
     if ImGui.Button('Save and Close##'..script) then
         openConfigGUI = false
         settings = dofile(configFile)
+        settings[script].DynamicHP = tmpDHP
+        settings[script].DynamicMP = tmpDMP
         settings[script].FlashBorder = flashBorder
         settings[script].ProgressSize = progressSize
         settings[script].Scale = ZoomLvl
@@ -685,18 +711,26 @@ function GUI_Target(open)
     -- My Health Bar
     local yPos = ImGui.GetCursorPosY()
     ImGui.SetWindowFontScale(ZoomLvl * 0.75)
-    if ME.PctHPs() <= 0 then
-        ImGui.PushStyleColor(ImGuiCol.PlotHistogram,(COLOR.color('purple')))
-    elseif ME.PctHPs() < 15 then
-        if pulse then
-            ImGui.PushStyleColor(ImGuiCol.PlotHistogram,(COLOR.color('orange')))
-            if not ME.CombatState() == 'COMBAT' then pulse = false end
+    if settings[script].DynamicHP then
+        r = 1
+        b = b * (100 - ME.PctHPs()) / 150
+        g = 0.1
+        a = 0.9
+        ImGui.PushStyleColor(ImGuiCol.PlotHistogram, ImVec4(r, g, b, a))
+    else
+        if ME.PctHPs() <= 0 then
+            ImGui.PushStyleColor(ImGuiCol.PlotHistogram,(COLOR.color('purple')))
+        elseif ME.PctHPs() < 15 then
+            if pulse then
+                ImGui.PushStyleColor(ImGuiCol.PlotHistogram,(COLOR.color('orange')))
+                if not ME.CombatState() == 'COMBAT' then pulse = false end
+            else
+                ImGui.PushStyleColor(ImGuiCol.PlotHistogram,(COLOR.color('red')))
+                if not ME.CombatState() == 'COMBAT' then pulse = true end
+            end
         else
             ImGui.PushStyleColor(ImGuiCol.PlotHistogram,(COLOR.color('red')))
-            if not ME.CombatState() == 'COMBAT' then pulse = true end
         end
-    else
-        ImGui.PushStyleColor(ImGuiCol.PlotHistogram,(COLOR.color('red')))
     end
     ImGui.ProgressBar(((tonumber(ME.PctHPs() or 0)) / 100), ImGui.GetContentRegionAvail(), progressSize , '##pctHps')
     ImGui.PopStyleColor()
@@ -706,7 +740,15 @@ function GUI_Target(open)
     local yPos = ImGui.GetCursorPosY()
     --My Mana Bar
     if (tonumber(ME.MaxMana()) > 0) then
-        ImGui.PushStyleColor(ImGuiCol.PlotHistogram,(COLOR.color('light blue2')))
+        if settings[script].DynamicMP then
+            b = 0.9
+            r = 1 * (100 - ME.PctMana()) / 200
+            g = 0.9 * ME.PctMana() / 100  > 0.1 and 0.9 * ME.PctMana() / 100 or 0.1
+            a = 0.5
+            ImGui.PushStyleColor(ImGuiCol.PlotHistogram, ImVec4(r, g, b, a))
+        else
+            ImGui.PushStyleColor(ImGuiCol.PlotHistogram,(COLOR.color('light blue2')))
+        end
         ImGui.ProgressBar(((tonumber(ME.PctMana() or 0)) / 100), ImGui.GetContentRegionAvail(), progressSize, '##pctMana')
         ImGui.PopStyleColor()
         ImGui.SetCursorPosY(yPos)
@@ -738,10 +780,18 @@ function GUI_Target(open)
         local tBodyType = TARGET.Body.Name() or '?'
         --Target Health Bar
         ImGui.BeginGroup()
-        if TARGET.PctHPs() < 25 then
-            ImGui.PushStyleColor(ImGuiCol.PlotHistogram,(COLOR.color('orange')))
+        if settings[script].DynamicHP then
+            r = 0.9
+            b = b * (100 - TARGET.PctHPs()) / 150
+            g = 0.1
+            a = 0.9
+            ImGui.PushStyleColor(ImGuiCol.PlotHistogram, ImVec4(r, g, b, a))
         else
-            ImGui.PushStyleColor(ImGuiCol.PlotHistogram,(COLOR.color('red')))
+            if TARGET.PctHPs() < 25 then
+                ImGui.PushStyleColor(ImGuiCol.PlotHistogram,(COLOR.color('orange')))
+            else
+                ImGui.PushStyleColor(ImGuiCol.PlotHistogram,(COLOR.color('red')))
+            end
         end
         ImGui.ProgressBar(((tonumber(TARGET.PctHPs() or 0)) / 100), ImGui.GetContentRegionAvail(), progressSize * 3,'##' .. TARGET.PctHPs())
         ImGui.PopStyleColor()
