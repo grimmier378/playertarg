@@ -31,7 +31,6 @@ local themeName = 'Default'
 local script = 'PlayerTarg'
 local pulseSpeed = 5
 local combatPulseSpeed = 10
-local r,g,b,a
 -- Flags
 
 local tPlayerFlags = bit32.bor(ImGuiTableFlags.NoBordersInBody, ImGuiTableFlags.NoPadInnerX,
@@ -50,6 +49,10 @@ defaults = {
         locked = false,
         iconSize = 26,
         doPulse = true,
+        ColorHPMax = {0.992, 0.138, 0.138, 1.000},
+        ColorHPMin = {0.551, 0.207, 0.962, 1.000},
+        ColorMPMax = {0.231, 0.707, 0.938, 1.000},
+        ColorMPMin = {0.600, 0.231, 0.938, 1.000},
         pulseSpeed = 5,
         combatPulseSpeed = 10,
         DynamicHP = false,
@@ -142,6 +145,26 @@ local function loadSettings()
 
     if settings[script].IconSize == nil then
         settings[script].IconSize = 26
+        newSetting = true
+    end
+
+    if settings[script].ColorHPMax == nil then
+        settings[script].ColorHPMax = defaults.ColorHPMax
+        newSetting = true
+    end
+
+    if settings[script].ColorHPMin == nil then
+        settings[script].ColorHPMin = defaults.ColorHPMin
+        newSetting = true
+    end
+
+    if settings[script].ColorMPMax == nil then
+        settings[script].ColorMPMax = defaults.ColorMPMax
+        newSetting = true
+    end
+
+    if settings[script].ColorMPMin == nil then
+        settings[script].ColorMPMin = defaults.ColorMPMin
         newSetting = true
     end
 
@@ -264,6 +287,22 @@ local function getDuration(i)
     -- Format the time string as H : M : S
     local sRemaining = string.format("%02d:%02d:%02d", h, m, s)
     return sRemaining
+end
+
+function calculateColor(minColor, maxColor, value)
+    -- Ensure value is within the range of 0 to 100
+    value = math.max(0, math.min(100, value))
+
+    -- Calculate the proportion of the value within the range
+    local proportion = value / 100
+
+    -- Interpolate between minColor and maxColor based on the proportion
+    local r = minColor[1] + proportion * (maxColor[1] - minColor[1])
+    local g = minColor[2] + proportion * (maxColor[2] - minColor[2])
+    local b = minColor[3] + proportion * (maxColor[3] - minColor[3])
+    local a = minColor[4] + proportion * (maxColor[4] - minColor[4])
+
+    return r, g, b, a
 end
 
 --[[
@@ -492,19 +531,34 @@ local function PlayerTargConf_GUI(open)
     ImGui.SeparatorText("Dynamic Bar Colors##"..script)
     local tmpDHP = settings[script].DynamicHP
     local tmpDMP = settings[script].DynamicMP
+
     tmpDHP = ImGui.Checkbox('Dynamic HP Bar', tmpDHP)
-    tmpDMP = ImGui.Checkbox('Dynamic Mana Bar', tmpDMP)
     if tmpDHP ~= settings[script].DynamicHP then
         settings[script].DynamicHP = tmpDHP
     end
+    ImGui.SameLine()
+    ImGui.SetNextItemWidth(60)
+    settings[script].ColorHPMin = ImGui.ColorEdit4("HP Min Color##"..script, settings[script].ColorHPMin, bit32.bor(ImGuiColorEditFlags.AlphaBar, ImGuiColorEditFlags.NoInputs))
+    ImGui.SameLine()
+    ImGui.SetNextItemWidth(60)
+    settings[script].ColorHPMax = ImGui.ColorEdit4("HP Max Color##"..script, settings[script].ColorHPMax, bit32.bor(ImGuiColorEditFlags.AlphaBar, ImGuiColorEditFlags.NoInputs))
+
+    tmpDMP = ImGui.Checkbox('Dynamic Mana Bar', tmpDMP)
     if tmpDMP ~= settings[script].DynamicMP then
         settings[script].DynamicMP = tmpDMP
     end
+    ImGui.SameLine()
+    ImGui.SetNextItemWidth(60)
+    settings[script].ColorMPMin = ImGui.ColorEdit4("Mana Min Color##"..script, settings[script].ColorMPMin, bit32.bor( ImGuiColorEditFlags.NoInputs))
+    ImGui.SameLine()
+    ImGui.SetNextItemWidth(60)
+    settings[script].ColorMPMax = ImGui.ColorEdit4("Mana Max Color##"..script, settings[script].ColorMPMax, bit32.bor( ImGuiColorEditFlags.NoInputs))
 
     ImGui.SeparatorText("Save and Close##"..script)
     if ImGui.Button('Save and Close##'..script) then
         openConfigGUI = false
         settings = dofile(configFile)
+
         settings[script].DynamicHP = tmpDHP
         settings[script].DynamicMP = tmpDMP
         settings[script].FlashBorder = flashBorder
@@ -712,11 +766,8 @@ function GUI_Target(open)
     local yPos = ImGui.GetCursorPosY()
     ImGui.SetWindowFontScale(ZoomLvl * 0.75)
     if settings[script].DynamicHP then
-        r = 1
-        b = b * (100 - ME.PctHPs()) / 150
-        g = 0.1
-        a = 0.9
-        ImGui.PushStyleColor(ImGuiCol.PlotHistogram, ImVec4(r, g, b, a))
+        local hr,hg,hb,ha = calculateColor(settings[script].ColorHPMin, settings[script].ColorHPMax, ME.PctHPs())
+        ImGui.PushStyleColor(ImGuiCol.PlotHistogram, ImVec4(hr, hg, hb, ha))
     else
         if ME.PctHPs() <= 0 then
             ImGui.PushStyleColor(ImGuiCol.PlotHistogram,(COLOR.color('purple')))
@@ -741,11 +792,8 @@ function GUI_Target(open)
     --My Mana Bar
     if (tonumber(ME.MaxMana()) > 0) then
         if settings[script].DynamicMP then
-            b = 0.9
-            r = 1 * (100 - ME.PctMana()) / 200
-            g = 0.9 * ME.PctMana() / 100  > 0.1 and 0.9 * ME.PctMana() / 100 or 0.1
-            a = 0.5
-            ImGui.PushStyleColor(ImGuiCol.PlotHistogram, ImVec4(r, g, b, a))
+            local mr,mg,mb,ma = calculateColor(settings[script].ColorMPMin, settings[script].ColorMPMax, ME.PctMana())
+            ImGui.PushStyleColor(ImGuiCol.PlotHistogram, ImVec4(mr, mg, mb, ma))
         else
             ImGui.PushStyleColor(ImGuiCol.PlotHistogram,(COLOR.color('light blue2')))
         end
@@ -781,11 +829,8 @@ function GUI_Target(open)
         --Target Health Bar
         ImGui.BeginGroup()
         if settings[script].DynamicHP then
-            r = 0.9
-            b = b * (100 - TARGET.PctHPs()) / 150
-            g = 0.1
-            a = 0.9
-            ImGui.PushStyleColor(ImGuiCol.PlotHistogram, ImVec4(r, g, b, a))
+            local tr,tg,tb,ta = calculateColor(settings[script].ColorHPMin, settings[script].ColorHPMax, TARGET.PctHPs())
+            ImGui.PushStyleColor(ImGuiCol.PlotHistogram, ImVec4(tr, tg,tb, ta))
         else
             if TARGET.PctHPs() < 25 then
                 ImGui.PushStyleColor(ImGuiCol.PlotHistogram,(COLOR.color('orange')))
