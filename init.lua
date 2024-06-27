@@ -35,6 +35,8 @@ local colorHpMax = {0.992, 0.138, 0.138, 1.000}
 local colorHpMin = {0.551, 0.207, 0.962, 1.000}
 local colorMpMax = {0.231, 0.707, 0.938, 1.000}
 local colorMpMin = {0.600, 0.231, 0.938, 1.000}
+local testValue, testValue2 = 100, 100
+
 -- Flags
 
 local tPlayerFlags = bit32.bor(ImGuiTableFlags.NoBordersInBody, ImGuiTableFlags.NoPadInnerX,
@@ -551,6 +553,12 @@ local function PlayerTargConf_GUI(open)
     ImGui.SetNextItemWidth(60)
     colorHpMax = ImGui.ColorEdit4("HP Max Color##"..script, colorHpMax, bit32.bor(ImGuiColorEditFlags.AlphaBar, ImGuiColorEditFlags.NoInputs))
 
+   
+    testValue = ImGui.SliderInt("Test HP##"..script, testValue, 0, 100)
+    local r, g, b, a = calculateColor(colorHpMin, colorHpMax, testValue)
+    ImGui.PushStyleColor(ImGuiCol.PlotHistogram,ImVec4(r, g, b, a))
+    ImGui.ProgressBar((testValue / 100), ImGui.GetContentRegionAvail(), progressSize , '##Test')
+    ImGui.PopStyleColor()
     tmpDMP = ImGui.Checkbox('Dynamic Mana Bar', tmpDMP)
     if tmpDMP ~= settings[script].DynamicMP then
         settings[script].DynamicMP = tmpDMP
@@ -561,6 +569,12 @@ local function PlayerTargConf_GUI(open)
     ImGui.SameLine()
     ImGui.SetNextItemWidth(60)
     colorMpMax = ImGui.ColorEdit4("Mana Max Color##"..script, colorMpMax, bit32.bor( ImGuiColorEditFlags.NoInputs))
+    
+    testValue2 = ImGui.SliderInt("Test MP##"..script, testValue2, 0, 100)
+    local r2, g2, b2, a2 = calculateColor(colorMpMin, colorMpMax, testValue2)
+    ImGui.PushStyleColor(ImGuiCol.PlotHistogram,ImVec4(r2, g2, b2, a2))
+    ImGui.ProgressBar((testValue2 / 100), ImGui.GetContentRegionAvail(), progressSize , '##Test')
+    ImGui.PopStyleColor()
 
     ImGui.SeparatorText("Save and Close##"..script)
     if ImGui.Button('Save and Close##'..script) then
@@ -777,7 +791,7 @@ function GUI_Target(open)
     local yPos = ImGui.GetCursorPosY()
     ImGui.SetWindowFontScale(ZoomLvl * 0.75)
     if settings[script].DynamicHP then
-        local hr,hg,hb,ha = calculateColor(settings[script].ColorHPMin, settings[script].ColorHPMax, ME.PctHPs())
+        local hr,hg,hb,ha = calculateColor(colorHpMin, colorHpMax, ME.PctHPs())
         ImGui.PushStyleColor(ImGuiCol.PlotHistogram, ImVec4(hr, hg, hb, ha))
     else
         if ME.PctHPs() <= 0 then
@@ -803,7 +817,7 @@ function GUI_Target(open)
     --My Mana Bar
     if (tonumber(ME.MaxMana()) > 0) then
         if settings[script].DynamicMP then
-            local mr,mg,mb,ma = calculateColor(settings[script].ColorMPMin, settings[script].ColorMPMax, ME.PctMana())
+            local mr,mg,mb,ma = calculateColor(colorMpMin, colorMpMax, ME.PctMana())
             ImGui.PushStyleColor(ImGuiCol.PlotHistogram, ImVec4(mr, mg, mb, ma))
         else
             ImGui.PushStyleColor(ImGuiCol.PlotHistogram,(COLOR.color('light blue2')))
@@ -840,7 +854,7 @@ function GUI_Target(open)
         --Target Health Bar
         ImGui.BeginGroup()
         if settings[script].DynamicHP then
-            local tr,tg,tb,ta = calculateColor(settings[script].ColorHPMin, settings[script].ColorHPMax, TARGET.PctHPs())
+            local tr,tg,tb,ta = calculateColor(colorHpMin, colorHpMax, TARGET.PctHPs())
             ImGui.PushStyleColor(ImGuiCol.PlotHistogram, ImVec4(tr, tg,tb, ta))
         else
             if TARGET.PctHPs() < 25 then
