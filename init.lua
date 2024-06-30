@@ -562,7 +562,6 @@ local function PlayerTargConf_GUI(open)
     ImGui.SetNextItemWidth(60)
     colorHpMax = ImGui.ColorEdit4("HP Max Color##"..script, colorHpMax, bit32.bor(ImGuiColorEditFlags.AlphaBar, ImGuiColorEditFlags.NoInputs))
 
-   
     testValue = ImGui.SliderInt("Test HP##"..script, testValue, 0, 100)
     local r, g, b, a = calculateColor(colorHpMin, colorHpMax, testValue)
     ImGui.PushStyleColor(ImGuiCol.PlotHistogram,ImVec4(r, g, b, a))
@@ -652,8 +651,8 @@ local function drawTarget()
             ImGui.Text("Name: %s\t Lvl: %s\nClass: %s\nType: %s", targetName,tLvl,tClass,tBodyType )
             ImGui.EndTooltip()
         end
-        ImGui.SetWindowFontScale(ZoomLvl * 0.9)
-        ImGui.SetCursorPosY(ImGui.GetCursorPosY() - (progressSize * 3 + 7))
+        ImGui.SetWindowFontScale(ZoomLvl)
+        ImGui.SetCursorPosY(ImGui.GetCursorPosY() - (progressSize * 3 + 4))
         ImGui.SetCursorPosX(9)
         if ImGui.BeginTable("##targetInfoOverlay", 2, tPlayerFlags) then
             ImGui.TableSetupColumn("##col1", ImGuiTableColumnFlags.NoResize, (ImGui.GetContentRegionAvail() * .5) - 8)
@@ -695,11 +694,12 @@ local function drawTarget()
             ImGui.EndTable()
         end
         ImGui.EndGroup()
-        ImGui.SetWindowFontScale(ZoomLvl * 0.75)
+        ImGui.SetWindowFontScale(ZoomLvl)
         ImGui.Separator()
         --Aggro % Bar
+        ImGui.PushStyleVar(ImGuiStyleVar.ItemSpacing, 8, 1)
         if (TARGET.Aggressive) then
-            local yPos = ImGui.GetCursorPosY()
+            local yPos = ImGui.GetCursorPosY() +2
             ImGui.BeginGroup()
             if TARGET.PctAggro() < 100 then 
                 ImGui.PushStyleColor(ImGuiCol.PlotHistogram,(COLOR.color('orange')))
@@ -729,7 +729,7 @@ local function drawTarget()
         else
             ImGui.Text('')
         end
-    
+        ImGui.PopStyleVar()
         ImGui.EndGroup()
         if ImGui.IsItemHovered() and ImGui.IsMouseReleased(ImGuiMouseButton.Left) then
             if TLO.Cursor() then
@@ -768,7 +768,7 @@ function GUI_Target()
     if show then
     -- ImGui.BeginGroup()
         if ImGui.BeginMenuBar() then
-            if ZoomLvl > 1.25 then ImGui.PushStyleVar(ImGuiStyleVar.FramePadding, 4,7) end
+            -- if ZoomLvl > 1.25 then ImGui.PushStyleVar(ImGuiStyleVar.FramePadding, 4,7) end
             local lockedIcon = locked and Icons.FA_LOCK .. '##lockTabButton_MyChat' or
             Icons.FA_UNLOCK .. '##lockTablButton_MyChat'
             if ImGui.Button(lockedIcon) then
@@ -838,6 +838,7 @@ function GUI_Target()
             end
         end
         ImGui.PushStyleVar(ImGuiStyleVar.WindowPadding, 1,1)
+        ImGui.PushStyleVar(ImGuiStyleVar.FramePadding, 4,2)
         if flashBorder then ImGui.BeginChild('pInfo##', 0,((iconSize+4)*ZoomLvl),cFlag) end
         if ImGui.BeginTable("##playerInfo", 4, tPFlags) then
             ImGui.TableSetupColumn("##tName", ImGuiTableColumnFlags.NoResize, (ImGui.GetContentRegionAvail() * .5))
@@ -898,7 +899,7 @@ function GUI_Target()
                     ImGui.PopStyleColor()
                 end
             end
-            ImGui.SetWindowFontScale(ZoomLvl * 0.91)
+            ImGui.SetWindowFontScale(ZoomLvl)
             -- Icons
             ImGui.TableSetColumnIndex(2)
             ImGui.PushStyleVar(ImGuiStyleVar.ItemSpacing, 0, 0)
@@ -919,7 +920,7 @@ function GUI_Target()
             --  ImGui.SameLine()
             ImGui.Text(' ')
             ImGui.SameLine()
-            ImGui.SetWindowFontScale(ZoomLvl * .75)
+            ImGui.SetWindowFontScale(ZoomLvl)
             ImGui.Text(ME.Heading() or '??')
             ImGui.PopStyleVar()
             -- Lvl
@@ -938,13 +939,15 @@ function GUI_Target()
             
         end
         if flashBorder then ImGui.EndChild() end
+        ImGui.PopStyleColor()
         ImGui.PopStyleVar()
         ImGui.PushStyleVar(ImGuiStyleVar.FramePadding, 4,3)
-        ImGui.PopStyleColor()
+        
         ImGui.Separator()
+        ImGui.PushStyleVar(ImGuiStyleVar.ItemSpacing, 8, 1)
         -- My Health Bar
         local yPos = ImGui.GetCursorPosY()
-        ImGui.SetWindowFontScale(ZoomLvl * 0.75)
+        ImGui.SetWindowFontScale(ZoomLvl)
         if settings[script].DynamicHP then
             local hr,hg,hb,ha = calculateColor(colorHpMin, colorHpMax, ME.PctHPs())
             ImGui.PushStyleColor(ImGuiCol.PlotHistogram, ImVec4(hr, hg, hb, ha))
@@ -965,7 +968,7 @@ function GUI_Target()
         end
         ImGui.ProgressBar(((tonumber(ME.PctHPs() or 0)) / 100), ImGui.GetContentRegionAvail(), progressSize , '##pctHps')
         ImGui.PopStyleColor()
-        ImGui.SetCursorPosY(yPos)
+        ImGui.SetCursorPosY(yPos-1)
         ImGui.SetCursorPosX(ImGui.GetCursorPosX() + ((ImGui.GetWindowWidth() / 2) - 8))
         ImGui.Text(tostring(ME.PctHPs() or 0))
         local yPos = ImGui.GetCursorPosY()
@@ -979,7 +982,7 @@ function GUI_Target()
             end
             ImGui.ProgressBar(((tonumber(ME.PctMana() or 0)) / 100), ImGui.GetContentRegionAvail(), progressSize, '##pctMana')
             ImGui.PopStyleColor()
-            ImGui.SetCursorPosY(yPos)
+            ImGui.SetCursorPosY(yPos -1)
             ImGui.SetCursorPosX(ImGui.GetCursorPosX() + ((ImGui.GetWindowWidth() / 2) - 8))
             ImGui.Text(tostring(ME.PctMana() or 0))
         end
@@ -988,7 +991,7 @@ function GUI_Target()
         ImGui.PushStyleColor(ImGuiCol.PlotHistogram,(COLOR.color('yellow2')))
         ImGui.ProgressBar(((tonumber(ME.PctEndurance() or 0)) / 100), ImGui.GetContentRegionAvail(), progressSize, '##pctEndurance')
         ImGui.PopStyleColor()
-        ImGui.SetCursorPosY(yPos)
+        ImGui.SetCursorPosY(yPos -1)
         ImGui.SetCursorPosX(ImGui.GetCursorPosX() + ((ImGui.GetWindowWidth() / 2) - 8))
         ImGui.Text(tostring(ME.PctEndurance() or 0))
         ImGui.Separator()
@@ -996,13 +999,15 @@ function GUI_Target()
         if ImGui.IsItemHovered() and ImGui.IsMouseReleased(ImGuiMouseButton.Left) then
             mq.cmdf("/target %s", ME())
         end
-    
+        ImGui.PopStyleVar()
         --Target Info
         if not splitTarget then
             drawTarget()
         end
+        ImGui.PopStyleVar(2)
     end
-    if StyleCount > 0 then ImGui.PopStyleVar(StyleCount) else ImGui.PopStyleVar(1) end
+    
+    if StyleCount > 0 then ImGui.PopStyleVar(StyleCount) end
     if ColorCount > 0 then ImGui.PopStyleColor(ColorCount) end
     ImGui.SetWindowFontScale(1)
     ImGui.End()
@@ -1011,13 +1016,16 @@ function GUI_Target()
         local colorCountTarget, styleCountTarget = DrawTheme(themeName)
         local openT, showT = ImGui.Begin("Target##TargetPopout", true, targFlag)
         if showT then
+            ImGui.PushStyleVar(ImGuiStyleVar.WindowPadding, 1,1)
+            ImGui.PushStyleVar(ImGuiStyleVar.FramePadding, 4,2)
             drawTarget()
+            ImGui.PopStyleVar(2)
         end
-        if styleCountTarget > 0 then ImGui.PopStyleVar(styleCountTarget) else ImGui.PopStyleVar(1) end
+        
+        if styleCountTarget > 0 then ImGui.PopStyleVar(styleCountTarget) end
         if colorCountTarget > 0 then ImGui.PopStyleColor(colorCountTarget) end
         ImGui.SetWindowFontScale(1)
         ImGui.End()
-
     end
 end
 
