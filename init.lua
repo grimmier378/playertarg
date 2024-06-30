@@ -37,6 +37,7 @@ local colorMpMax = {0.231, 0.707, 0.938, 1.000}
 local colorMpMin = {0.600, 0.231, 0.938, 1.000}
 local testValue, testValue2 = 100, 100
 local splitTarget = false
+local ProgressSizeTarget = 30
 
 -- Flags
 
@@ -68,6 +69,7 @@ defaults = {
         DynamicMP = false,
         FlashBorder = true,
         ProgressSize = 10,
+        ProgressSizeTarget = 30,
 }
 
 -- Functions
@@ -197,6 +199,11 @@ local function loadSettings()
         newSetting = true
     end
     
+    if settings[script].ProgressSizeTarget == nil then
+        settings[script].ProgressSizeTarget = 30
+        newSetting = true
+    end
+
     if settings[script].SplitTarget == nil then
         settings[script].SplitTarget = false
         newSetting = true
@@ -216,6 +223,7 @@ local function loadSettings()
     locked = settings[script].locked
     ZoomLvl = settings[script].Scale
     themeName = settings[script].LoadTheme
+    ProgressSizeTarget = settings[script].ProgressSizeTarget
 
     if newSetting then writeSettings(configFile, settings) end
 end
@@ -308,7 +316,7 @@ local function getDuration(i)
     return sRemaining
 end
 
-function calculateColor(minColor, maxColor, value)
+function CalculateColor(minColor, maxColor, value)
     -- Ensure value is within the range of 0 to 100
     value = math.max(0, math.min(100, value))
 
@@ -507,6 +515,8 @@ local function PlayerTargConf_GUI(open)
     if progressSize ~= tmpPrgSz then
         progressSize = tmpPrgSz
     end
+    ProgressSizeTarget = ImGui.SliderInt("Target Progress Bar Size##"..script, ProgressSizeTarget, 5, 150)
+
     ImGui.SeparatorText("Pulse Settings##"..script)
     flashBorder = ImGui.Checkbox('Flash Border', flashBorder)
     ImGui.SameLine()
@@ -563,7 +573,7 @@ local function PlayerTargConf_GUI(open)
     colorHpMax = ImGui.ColorEdit4("HP Max Color##"..script, colorHpMax, bit32.bor(ImGuiColorEditFlags.AlphaBar, ImGuiColorEditFlags.NoInputs))
 
     testValue = ImGui.SliderInt("Test HP##"..script, testValue, 0, 100)
-    local r, g, b, a = calculateColor(colorHpMin, colorHpMax, testValue)
+    local r, g, b, a = CalculateColor(colorHpMin, colorHpMax, testValue)
     ImGui.PushStyleColor(ImGuiCol.PlotHistogram,ImVec4(r, g, b, a))
     ImGui.ProgressBar((testValue / 100), ImGui.GetContentRegionAvail(), progressSize , '##Test')
     ImGui.PopStyleColor()
@@ -579,7 +589,7 @@ local function PlayerTargConf_GUI(open)
     colorMpMax = ImGui.ColorEdit4("Mana Max Color##"..script, colorMpMax, bit32.bor( ImGuiColorEditFlags.NoInputs))
     
     testValue2 = ImGui.SliderInt("Test MP##"..script, testValue2, 0, 100)
-    local r2, g2, b2, a2 = calculateColor(colorMpMin, colorMpMax, testValue2)
+    local r2, g2, b2, a2 = CalculateColor(colorMpMin, colorMpMax, testValue2)
     ImGui.PushStyleColor(ImGuiCol.PlotHistogram,ImVec4(r2, g2, b2, a2))
     ImGui.ProgressBar((testValue2 / 100), ImGui.GetContentRegionAvail(), progressSize , '##Test')
     ImGui.PopStyleColor()
@@ -587,7 +597,7 @@ local function PlayerTargConf_GUI(open)
     ImGui.SeparatorText("Save and Close##"..script)
     if ImGui.Button('Save and Close##'..script) then
         openConfigGUI = false
-        settings = dofile(configFile)
+        settings[script].ProgressSizeTarget = ProgressSizeTarget
         settings[script].ColorHPMax = colorHpMax
         settings[script].ColorHPMin = colorHpMin
         settings[script].ColorMPMax = colorMpMax
@@ -633,7 +643,7 @@ local function drawTarget()
         --Target Health Bar
         ImGui.BeginGroup()
         if settings[script].DynamicHP then
-            local tr,tg,tb,ta = calculateColor(colorHpMin, colorHpMax, TARGET.PctHPs())
+            local tr,tg,tb,ta = CalculateColor(colorHpMin, colorHpMax, TARGET.PctHPs())
             ImGui.PushStyleColor(ImGuiCol.PlotHistogram, ImVec4(tr, tg,tb, ta))
         else
             if TARGET.PctHPs() < 25 then
@@ -642,7 +652,7 @@ local function drawTarget()
                 ImGui.PushStyleColor(ImGuiCol.PlotHistogram,(COLOR.color('red')))
             end
         end
-        ImGui.ProgressBar(((tonumber(TARGET.PctHPs() or 0)) / 100), ImGui.GetContentRegionAvail(), progressSize * 3,'##' .. TARGET.PctHPs())
+        ImGui.ProgressBar(((tonumber(TARGET.PctHPs() or 0)) / 100), ImGui.GetContentRegionAvail(), ProgressSizeTarget,'##' .. TARGET.PctHPs())
         ImGui.PopStyleColor()
                     
         if ImGui.IsItemHovered() then
@@ -652,7 +662,7 @@ local function drawTarget()
             ImGui.EndTooltip()
         end
         ImGui.SetWindowFontScale(ZoomLvl)
-        ImGui.SetCursorPosY(ImGui.GetCursorPosY() - (progressSize * 3 + 4))
+        ImGui.SetCursorPosY(ImGui.GetCursorPosY() - (ProgressSizeTarget + 4))
         ImGui.SetCursorPosX(9)
         if ImGui.BeginTable("##targetInfoOverlay", 2, tPlayerFlags) then
             ImGui.TableSetupColumn("##col1", ImGuiTableColumnFlags.NoResize, (ImGui.GetContentRegionAvail() * .5) - 8)
@@ -949,7 +959,7 @@ function GUI_Target()
         local yPos = ImGui.GetCursorPosY()
         ImGui.SetWindowFontScale(ZoomLvl)
         if settings[script].DynamicHP then
-            local hr,hg,hb,ha = calculateColor(colorHpMin, colorHpMax, ME.PctHPs())
+            local hr,hg,hb,ha = CalculateColor(colorHpMin, colorHpMax, ME.PctHPs())
             ImGui.PushStyleColor(ImGuiCol.PlotHistogram, ImVec4(hr, hg, hb, ha))
         else
             if ME.PctHPs() <= 0 then
@@ -975,7 +985,7 @@ function GUI_Target()
         --My Mana Bar
         if (tonumber(ME.MaxMana()) > 0) then
             if settings[script].DynamicMP then
-                local mr,mg,mb,ma = calculateColor(colorMpMin, colorMpMax, ME.PctMana())
+                local mr,mg,mb,ma = CalculateColor(colorMpMin, colorMpMax, ME.PctMana())
                 ImGui.PushStyleColor(ImGuiCol.PlotHistogram, ImVec4(mr, mg, mb, ma))
             else
                 ImGui.PushStyleColor(ImGuiCol.PlotHistogram,(COLOR.color('light blue2')))
