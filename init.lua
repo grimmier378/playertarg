@@ -36,12 +36,14 @@ local colorHpMin = {0.551, 0.207, 0.962, 1.000}
 local colorMpMax = {0.231, 0.707, 0.938, 1.000}
 local colorMpMin = {0.600, 0.231, 0.938, 1.000}
 local testValue, testValue2 = 100, 100
+local splitTarget = false
 
 -- Flags
 
 local tPlayerFlags = bit32.bor(ImGuiTableFlags.NoBordersInBody, ImGuiTableFlags.NoPadInnerX,
 ImGuiTableFlags.NoPadOuterX, ImGuiTableFlags.Resizable, ImGuiTableFlags.SizingFixedFit)
 local winFlag = bit32.bor(ImGuiWindowFlags.NoTitleBar, ImGuiWindowFlags.MenuBar, ImGuiWindowFlags.NoScrollbar, ImGuiWindowFlags.NoScrollWithMouse)
+local targFlag = bit32.bor(ImGuiWindowFlags.NoTitleBar, ImGuiWindowFlags.NoScrollbar, ImGuiWindowFlags.NoScrollWithMouse)
 
 --Tables
 
@@ -55,6 +57,7 @@ defaults = {
         locked = false,
         iconSize = 26,
         doPulse = true,
+        SplitTarget = false,
         ColorHPMax = {0.992, 0.138, 0.138, 1.000},
         ColorHPMin = {0.551, 0.207, 0.962, 1.000},
         ColorMPMax = {0.231, 0.707, 0.938, 1.000},
@@ -194,6 +197,12 @@ local function loadSettings()
         newSetting = true
     end
     
+    if settings[script].SplitTarget == nil then
+        settings[script].SplitTarget = false
+        newSetting = true
+    end
+
+    splitTarget = settings[script].SplitTarget
     colorHpMax = settings[script].ColorHPMax
     colorHpMin = settings[script].ColorHPMin
     colorMpMax = settings[script].ColorMPMax
@@ -603,245 +612,7 @@ local function PlayerTargConf_GUI(open)
 
 end
 
-function GUI_Target(open)
-    if not ShowGUI then return end
-    if TLO.Me.Zoning() then return end
-    ColorCount = 0
-    StyleCount = 0
-    local flags = winFlag
-    -- Default window size
-    ImGui.SetNextWindowSize(216, 239, ImGuiCond.FirstUseEver)
-    ColorCount, StyleCount = DrawTheme(themeName)
-    local show = false
-    if locked then
-        flags = bit32.bor(ImGuiWindowFlags.NoTitleBar, ImGuiWindowFlags.NoScrollbar, ImGuiWindowFlags.MenuBar, ImGuiWindowFlags.NoMove, ImGuiWindowFlags.NoScrollWithMouse)
-    end
-    open, show = ImGui.Begin(ME.DisplayName().."##Target", open, flags)
-    if not show then
-        if StyleCount > 0 then ImGui.PopStyleVar(StyleCount) end
-        if ColorCount > 0 then ImGui.PopStyleColor(ColorCount) end
-        ImGui.SetWindowFontScale(1)
-        ImGui.End()
-        return open
-    end
-    -- ImGui.BeginGroup()
-    if ImGui.BeginMenuBar() then
-        if ZoomLvl > 1.25 then ImGui.PushStyleVar(ImGuiStyleVar.FramePadding, 4,7) end
-        local lockedIcon = locked and Icons.FA_LOCK .. '##lockTabButton_MyChat' or
-        Icons.FA_UNLOCK .. '##lockTablButton_MyChat'
-        if ImGui.Button(lockedIcon) then
-            --ImGuiWindowFlags.NoMove
-            locked = not locked
-            settings = dofile(configFile)
-            settings[script].locked = locked
-            writeSettings(configFile, settings)
-        end
-        if ImGui.IsItemHovered() then
-            ImGui.SetWindowFontScale(ZoomLvl)
-            ImGui.BeginTooltip()
-            ImGui.Text("Lock Window")
-            ImGui.EndTooltip()
-        end
-        if ImGui.Button(gIcon..'##PlayerTarg') then
-            openConfigGUI = not openConfigGUI
-        end
-        ImGui.SetCursorPosX(ImGui.GetWindowContentRegionWidth() - 10)
-        if ImGui.MenuItem('X##Close'..script) then
-            running = false
-        end
-        ImGui.EndMenuBar()
-    end
-    
-    ImGui.SetCursorPosX((ImGui.GetContentRegionAvail() / 2) - 22)
-    ImGui.Dummy(iconSize - 5, iconSize - 6)
-    ImGui.SameLine()
-    ImGui.SetCursorPosX(5)
-    -- Player Information
-    -- ImGui.PushStyleVar(ImGuiStyleVar.CellPadding)
-    ImGui.BeginGroup()
-    local tPFlags = tPlayerFlags
-    local cFlag = bit32.bor(ImGuiChildFlags.AlwaysAutoResize)
-    if ME.Combat() then
-        if flashBorder then
-            ImGui.PushStyleColor(ImGuiCol.Border,0.9, 0.1, 0.1, (cAlpha/255))
-            cFlag = bit32.bor(ImGuiChildFlags.Border,cFlag)
-            tPFlags = tPlayerFlags
-        else
-            ImGui.PushStyleColor(ImGuiCol.TableRowBg,0.9, 0.1, 0.1, (cAlpha/255))
-            tPFlags = bit32.bor(ImGuiTableFlags.RowBg, tPlayerFlags)
-            cFlag = bit32.bor(ImGuiChildFlags.AlwaysAutoResize)
-        end
-    else
-        if flashBorder then
-            ImGui.PushStyleColor(ImGuiCol.Border,themeBorderBG[1], themeBorderBG[2], themeBorderBG[3], themeBorderBG[4])
-            cFlag = bit32.bor(ImGuiChildFlags.Border,cFlag)
-            tPFlags = tPlayerFlags
-        else
-            ImGui.PushStyleColor(ImGuiCol.TableRowBg,themeRowBG[1], themeRowBG[2], themeRowBG[3], themeRowBG[4])
-            tPFlags = bit32.bor(ImGuiTableFlags.RowBg, tPlayerFlags)
-            cFlag = bit32.bor(ImGuiChildFlags.AlwaysAutoResize)
-        end
-    end
-    ImGui.PushStyleVar(ImGuiStyleVar.WindowPadding, 1,1)
-    if flashBorder then ImGui.BeginChild('pInfo##', 0,((iconSize+4)*ZoomLvl),cFlag) end
-    if ImGui.BeginTable("##playerInfo", 4, tPFlags) then
-        ImGui.TableSetupColumn("##tName", ImGuiTableColumnFlags.NoResize, (ImGui.GetContentRegionAvail() * .5))
-        ImGui.TableSetupColumn("##tVis", ImGuiTableColumnFlags.NoResize, 24)
-        ImGui.TableSetupColumn("##tIcons", ImGuiTableColumnFlags.WidthStretch, 80) --ImGui.GetContentRegionAvail()*.25)
-        ImGui.TableSetupColumn("##tLvl", ImGuiTableColumnFlags.NoResize, 30)
-        ImGui.TableNextRow()
-
-        -- Name
-        ImGui.SetWindowFontScale(ZoomLvl)
-        ImGui.TableSetColumnIndex(0)
-        local meName = ME.DisplayName()
-        ImGui.Text(" %s",meName)
-        local combatState = ME.CombatState()
-        if ME.Poisoned() and ME.Diseased() then
-            ImGui.SameLine(ImGui.GetColumnWidth() - 45)
-            DrawStatusIcon(2579,'item','Diseased and Posioned')
-        elseif ME.Poisoned() then 
-            ImGui.SameLine(ImGui.GetColumnWidth() - 45)
-            DrawStatusIcon(42,'spell','Posioned')
-        elseif ME.Diseased() then
-            ImGui.SameLine(ImGui.GetColumnWidth() - 45)
-            DrawStatusIcon(41,'spell','Diseased')
-        elseif ME.Dotted() then
-            ImGui.SameLine(ImGui.GetColumnWidth() - 45)
-            DrawStatusIcon(5987,'item','Dotted')
-        elseif ME.Cursed() then
-            ImGui.SameLine(ImGui.GetColumnWidth() - 45)
-            DrawStatusIcon(5759,'item','Cursed')
-        elseif ME.Corrupted() then
-            ImGui.SameLine(ImGui.GetColumnWidth() - 45)
-            DrawStatusIcon(5758,'item','Corrupted')
-        end
-        ImGui.SameLine(ImGui.GetColumnWidth() - 25)
-        if combatState == 'DEBUFFED' then                
-            DrawStatusIcon('A_PWCSDebuff','pwcs','You are Debuffed and need a cure before resting.')
-        elseif combatState == 'ACTIVE' then
-            DrawStatusIcon('A_PWCSStanding','pwcs','You are not in combat and may rest at any time.')
-        elseif combatState == 'COOLDOWN' then
-            DrawStatusIcon('A_PWCSTimer','pwcs','You are recovering from combat and can not reset yet')
-        elseif combatState == 'RESTING' then
-            DrawStatusIcon('A_PWCSRegen','pwcs','You are Resting.')
-        elseif combatState == 'COMBAT' then
-            DrawStatusIcon('A_PWCSInCombat','pwcs','You are in Combat.')
-        else
-            DrawStatusIcon(3996,'item',' ')
-        end
-        -- Visiblity
-        ImGui.TableSetColumnIndex(1)
-        if TARGET() ~= nil then
-            if TARGET.LineOfSight() then
-                ImGui.PushStyleColor(ImGuiCol.Text, 0, 1, 0, 1)
-                ImGui.Text(Icons.MD_VISIBILITY)
-                ImGui.PopStyleColor()
-            else
-                ImGui.PushStyleColor(ImGuiCol.Text, 0.9, 0, 0, 1)
-                ImGui.Text(Icons.MD_VISIBILITY_OFF)
-                ImGui.PopStyleColor()
-            end
-        end
-        ImGui.SetWindowFontScale(ZoomLvl * 0.91)
-        -- Icons
-        ImGui.TableSetColumnIndex(2)
-        ImGui.PushStyleVar(ImGuiStyleVar.ItemSpacing, 0, 0)
-        ImGui.Text('')
-        if TLO.Group.MainTank.ID() == ME.ID() then
-            ImGui.SameLine()
-            DrawStatusIcon('A_Tank','pwcs','Main Tank')
-        end
-        if TLO.Group.MainAssist.ID() == ME.ID() then
-            ImGui.SameLine()
-            DrawStatusIcon('A_Assist','pwcs','Main Assist')
-        end
-        if TLO.Group.Puller.ID() == ME.ID() then
-            ImGui.SameLine()
-            DrawStatusIcon('A_Puller','pwcs','Puller')
-        end
-        ImGui.SameLine()
-        --  ImGui.SameLine()
-        ImGui.Text(' ')
-        ImGui.SameLine()
-        ImGui.SetWindowFontScale(ZoomLvl * .75)
-        ImGui.Text(ME.Heading() or '??')
-        ImGui.PopStyleVar()
-        -- Lvl
-        ImGui.TableSetColumnIndex(3)
-        ImGui.PushStyleVar(ImGuiStyleVar.ItemSpacing, 2, 0)
-        ImGui.SetWindowFontScale(ZoomLvl)
-        ImGui.Text(tostring(ME.Level() or 0))
-        if ImGui.IsItemHovered() then
-            ImGui.BeginTooltip()
-            ImGui.SetWindowFontScale(ZoomLvl)
-            ImGui.Text(GetInfoToolTip())
-            ImGui.EndTooltip()
-        end
-        ImGui.PopStyleVar()
-        ImGui.EndTable()
-        
-    end
-    if flashBorder then ImGui.EndChild() end
-    ImGui.PopStyleVar()
-    ImGui.PushStyleVar(ImGuiStyleVar.FramePadding, 4,3)
-    ImGui.PopStyleColor()
-    ImGui.Separator()
-    -- My Health Bar
-    local yPos = ImGui.GetCursorPosY()
-    ImGui.SetWindowFontScale(ZoomLvl * 0.75)
-    if settings[script].DynamicHP then
-        local hr,hg,hb,ha = calculateColor(colorHpMin, colorHpMax, ME.PctHPs())
-        ImGui.PushStyleColor(ImGuiCol.PlotHistogram, ImVec4(hr, hg, hb, ha))
-    else
-        if ME.PctHPs() <= 0 then
-            ImGui.PushStyleColor(ImGuiCol.PlotHistogram,(COLOR.color('purple')))
-        elseif ME.PctHPs() < 15 then
-            if pulse then
-                ImGui.PushStyleColor(ImGuiCol.PlotHistogram,(COLOR.color('orange')))
-                if not ME.CombatState() == 'COMBAT' then pulse = false end
-            else
-                ImGui.PushStyleColor(ImGuiCol.PlotHistogram,(COLOR.color('red')))
-                if not ME.CombatState() == 'COMBAT' then pulse = true end
-            end
-        else
-            ImGui.PushStyleColor(ImGuiCol.PlotHistogram,(COLOR.color('red')))
-        end
-    end
-    ImGui.ProgressBar(((tonumber(ME.PctHPs() or 0)) / 100), ImGui.GetContentRegionAvail(), progressSize , '##pctHps')
-    ImGui.PopStyleColor()
-    ImGui.SetCursorPosY(yPos)
-    ImGui.SetCursorPosX(ImGui.GetCursorPosX() + ((ImGui.GetWindowWidth() / 2) - 8))
-    ImGui.Text(tostring(ME.PctHPs() or 0))
-    local yPos = ImGui.GetCursorPosY()
-    --My Mana Bar
-    if (tonumber(ME.MaxMana()) > 0) then
-        if settings[script].DynamicMP then
-            local mr,mg,mb,ma = calculateColor(colorMpMin, colorMpMax, ME.PctMana())
-            ImGui.PushStyleColor(ImGuiCol.PlotHistogram, ImVec4(mr, mg, mb, ma))
-        else
-            ImGui.PushStyleColor(ImGuiCol.PlotHistogram,(COLOR.color('light blue2')))
-        end
-        ImGui.ProgressBar(((tonumber(ME.PctMana() or 0)) / 100), ImGui.GetContentRegionAvail(), progressSize, '##pctMana')
-        ImGui.PopStyleColor()
-        ImGui.SetCursorPosY(yPos)
-        ImGui.SetCursorPosX(ImGui.GetCursorPosX() + ((ImGui.GetWindowWidth() / 2) - 8))
-        ImGui.Text(tostring(ME.PctMana() or 0))
-    end
-    local yPos = ImGui.GetCursorPosY()
-    --My Endurance bar
-    ImGui.PushStyleColor(ImGuiCol.PlotHistogram,(COLOR.color('yellow2')))
-    ImGui.ProgressBar(((tonumber(ME.PctEndurance() or 0)) / 100), ImGui.GetContentRegionAvail(), progressSize, '##pctEndurance')
-    ImGui.PopStyleColor()
-    ImGui.SetCursorPosY(yPos)
-    ImGui.SetCursorPosX(ImGui.GetCursorPosX() + ((ImGui.GetWindowWidth() / 2) - 8))
-    ImGui.Text(tostring(ME.PctEndurance() or 0))
-    ImGui.Separator()
-    ImGui.EndGroup()
-    if ImGui.IsItemHovered() and ImGui.IsMouseReleased(ImGuiMouseButton.Left) then
-        mq.cmdf("/target %s", ME())
-    end
-    --Target Info
+local function drawTarget()
     if (TARGET() ~= nil) then
         ImGui.BeginGroup()
         local targetName = TARGET.CleanName() or '?'
@@ -865,7 +636,7 @@ function GUI_Target(open)
         end
         ImGui.ProgressBar(((tonumber(TARGET.PctHPs() or 0)) / 100), ImGui.GetContentRegionAvail(), progressSize * 3,'##' .. TARGET.PctHPs())
         ImGui.PopStyleColor()
-        
+                    
         if ImGui.IsItemHovered() then
             ImGui.SetWindowFontScale(ZoomLvl)
             ImGui.BeginTooltip()
@@ -884,7 +655,7 @@ function GUI_Target(open)
             ImGui.Text(targetName)
             -- Distance in the second column
             ImGui.TableSetColumnIndex(1)
-
+    
             ImGui.PushStyleColor(ImGuiCol.Text,COLOR.color(tC))
             if tC == 'pink' then
                 ImGui.Text('   ' .. Icons.MD_WARNING)
@@ -899,7 +670,7 @@ function GUI_Target(open)
             -- Second Row: Class, Level, and Aggro%
             ImGui.TableNextRow()
             ImGui.TableSetColumnIndex(0) -- Class and Level in the first column
-
+    
             ImGui.Text(tostring(tLvl) .. ' ' .. tClass .. '\t' .. tBodyType)
             -- Aggro% text in the second column
             ImGui.TableSetColumnIndex(1)
@@ -923,7 +694,7 @@ function GUI_Target(open)
                 '##pctAggro')
             ImGui.PopStyleColor()
             --Secondary Aggro Person
-            
+                        
             if (TARGET.SecondaryAggroPlayer() ~= nil) then
                 ImGui.SetCursorPosY(yPos)
                 ImGui.SetCursorPosX(ImGui.GetCursorPosX() + 5)
@@ -942,7 +713,7 @@ function GUI_Target(open)
         else
             ImGui.Text('')
         end
-
+    
         ImGui.EndGroup()
         if ImGui.IsItemHovered() and ImGui.IsMouseReleased(ImGuiMouseButton.Left) then
             if TLO.Cursor() then
@@ -958,16 +729,280 @@ function GUI_Target(open)
             ImGui.EndChild()
             -- End the scrollable region
         end
-        
+                    
     else
         ImGui.Text('')
     end
+end
+
+function GUI_Target()
+    if not ShowGUI then return end
+    if TLO.Me.Zoning() then return end
+    ColorCount = 0
+    StyleCount = 0
+    local flags = winFlag
+    -- Default window size
+    ImGui.SetNextWindowSize(216, 239, ImGuiCond.FirstUseEver)
+    ColorCount, StyleCount = DrawTheme(themeName)
+    
+    if locked then
+        flags = bit32.bor(ImGuiWindowFlags.NoTitleBar, ImGuiWindowFlags.NoScrollbar, ImGuiWindowFlags.MenuBar, ImGuiWindowFlags.NoMove, ImGuiWindowFlags.NoScrollWithMouse)
+    end
+    local open, show = ImGui.Begin(ME.DisplayName().."##Target", true, flags)
+    if show then
+    -- ImGui.BeginGroup()
+        if ImGui.BeginMenuBar() then
+            if ZoomLvl > 1.25 then ImGui.PushStyleVar(ImGuiStyleVar.FramePadding, 4,7) end
+            local lockedIcon = locked and Icons.FA_LOCK .. '##lockTabButton_MyChat' or
+            Icons.FA_UNLOCK .. '##lockTablButton_MyChat'
+            if ImGui.Button(lockedIcon) then
+                --ImGuiWindowFlags.NoMove
+                locked = not locked
+                settings = dofile(configFile)
+                settings[script].locked = locked
+                writeSettings(configFile, settings)
+            end
+            if ImGui.IsItemHovered() then
+                ImGui.SetWindowFontScale(ZoomLvl)
+                ImGui.BeginTooltip()
+                ImGui.Text("Lock Window")
+                ImGui.EndTooltip()
+            end
+            if ImGui.Button(gIcon..'##PlayerTarg') then
+                openConfigGUI = not openConfigGUI
+            end
+            local splitIcon = splitTarget and Icons.FA_TOGGLE_ON ..'##PtargSplit' or Icons.FA_TOGGLE_OFF ..'##PtargSplit'
+            if ImGui.Button(splitIcon) then
+                splitTarget = not splitTarget
+                settings = dofile(configFile)
+                settings[script].SplitTarget = splitTarget
+                writeSettings(configFile, settings)
+            end
+            if ImGui.IsItemHovered() then
+                ImGui.SetWindowFontScale(ZoomLvl)
+                ImGui.BeginTooltip()
+                ImGui.Text("Split Windows")
+                ImGui.EndTooltip()
+            end
+            ImGui.SetCursorPosX(ImGui.GetWindowContentRegionWidth() - 10)
+            if ImGui.MenuItem('X##Close'..script) then
+                running = false
+            end
+            ImGui.EndMenuBar()
+        end
+        
+        ImGui.SetCursorPosX((ImGui.GetContentRegionAvail() / 2) - 22)
+        ImGui.Dummy(iconSize - 5, iconSize - 6)
+        ImGui.SameLine()
+        ImGui.SetCursorPosX(5)
+        -- Player Information
+        -- ImGui.PushStyleVar(ImGuiStyleVar.CellPadding)
+        ImGui.BeginGroup()
+        local tPFlags = tPlayerFlags
+        local cFlag = bit32.bor(ImGuiChildFlags.AlwaysAutoResize)
+        if ME.Combat() then
+            if flashBorder then
+                ImGui.PushStyleColor(ImGuiCol.Border,0.9, 0.1, 0.1, (cAlpha/255))
+                cFlag = bit32.bor(ImGuiChildFlags.Border,cFlag)
+                tPFlags = tPlayerFlags
+            else
+                ImGui.PushStyleColor(ImGuiCol.TableRowBg,0.9, 0.1, 0.1, (cAlpha/255))
+                tPFlags = bit32.bor(ImGuiTableFlags.RowBg, tPlayerFlags)
+                cFlag = bit32.bor(ImGuiChildFlags.AlwaysAutoResize)
+            end
+        else
+            if flashBorder then
+                ImGui.PushStyleColor(ImGuiCol.Border,themeBorderBG[1], themeBorderBG[2], themeBorderBG[3], themeBorderBG[4])
+                cFlag = bit32.bor(ImGuiChildFlags.Border,cFlag)
+                tPFlags = tPlayerFlags
+            else
+                ImGui.PushStyleColor(ImGuiCol.TableRowBg,themeRowBG[1], themeRowBG[2], themeRowBG[3], themeRowBG[4])
+                tPFlags = bit32.bor(ImGuiTableFlags.RowBg, tPlayerFlags)
+                cFlag = bit32.bor(ImGuiChildFlags.AlwaysAutoResize)
+            end
+        end
+        ImGui.PushStyleVar(ImGuiStyleVar.WindowPadding, 1,1)
+        if flashBorder then ImGui.BeginChild('pInfo##', 0,((iconSize+4)*ZoomLvl),cFlag) end
+        if ImGui.BeginTable("##playerInfo", 4, tPFlags) then
+            ImGui.TableSetupColumn("##tName", ImGuiTableColumnFlags.NoResize, (ImGui.GetContentRegionAvail() * .5))
+            ImGui.TableSetupColumn("##tVis", ImGuiTableColumnFlags.NoResize, 24)
+            ImGui.TableSetupColumn("##tIcons", ImGuiTableColumnFlags.WidthStretch, 80) --ImGui.GetContentRegionAvail()*.25)
+            ImGui.TableSetupColumn("##tLvl", ImGuiTableColumnFlags.NoResize, 30)
+            ImGui.TableNextRow()
+
+            -- Name
+            ImGui.SetWindowFontScale(ZoomLvl)
+            ImGui.TableSetColumnIndex(0)
+            local meName = ME.DisplayName()
+            ImGui.Text(" %s",meName)
+            local combatState = ME.CombatState()
+            if ME.Poisoned() and ME.Diseased() then
+                ImGui.SameLine(ImGui.GetColumnWidth() - 45)
+                DrawStatusIcon(2579,'item','Diseased and Posioned')
+            elseif ME.Poisoned() then 
+                ImGui.SameLine(ImGui.GetColumnWidth() - 45)
+                DrawStatusIcon(42,'spell','Posioned')
+            elseif ME.Diseased() then
+                ImGui.SameLine(ImGui.GetColumnWidth() - 45)
+                DrawStatusIcon(41,'spell','Diseased')
+            elseif ME.Dotted() then
+                ImGui.SameLine(ImGui.GetColumnWidth() - 45)
+                DrawStatusIcon(5987,'item','Dotted')
+            elseif ME.Cursed() then
+                ImGui.SameLine(ImGui.GetColumnWidth() - 45)
+                DrawStatusIcon(5759,'item','Cursed')
+            elseif ME.Corrupted() then
+                ImGui.SameLine(ImGui.GetColumnWidth() - 45)
+                DrawStatusIcon(5758,'item','Corrupted')
+            end
+            ImGui.SameLine(ImGui.GetColumnWidth() - 25)
+            if combatState == 'DEBUFFED' then                
+                DrawStatusIcon('A_PWCSDebuff','pwcs','You are Debuffed and need a cure before resting.')
+            elseif combatState == 'ACTIVE' then
+                DrawStatusIcon('A_PWCSStanding','pwcs','You are not in combat and may rest at any time.')
+            elseif combatState == 'COOLDOWN' then
+                DrawStatusIcon('A_PWCSTimer','pwcs','You are recovering from combat and can not reset yet')
+            elseif combatState == 'RESTING' then
+                DrawStatusIcon('A_PWCSRegen','pwcs','You are Resting.')
+            elseif combatState == 'COMBAT' then
+                DrawStatusIcon('A_PWCSInCombat','pwcs','You are in Combat.')
+            else
+                DrawStatusIcon(3996,'item',' ')
+            end
+            -- Visiblity
+            ImGui.TableSetColumnIndex(1)
+            if TARGET() ~= nil then
+                if TARGET.LineOfSight() then
+                    ImGui.PushStyleColor(ImGuiCol.Text, 0, 1, 0, 1)
+                    ImGui.Text(Icons.MD_VISIBILITY)
+                    ImGui.PopStyleColor()
+                else
+                    ImGui.PushStyleColor(ImGuiCol.Text, 0.9, 0, 0, 1)
+                    ImGui.Text(Icons.MD_VISIBILITY_OFF)
+                    ImGui.PopStyleColor()
+                end
+            end
+            ImGui.SetWindowFontScale(ZoomLvl * 0.91)
+            -- Icons
+            ImGui.TableSetColumnIndex(2)
+            ImGui.PushStyleVar(ImGuiStyleVar.ItemSpacing, 0, 0)
+            ImGui.Text('')
+            if TLO.Group.MainTank.ID() == ME.ID() then
+                ImGui.SameLine()
+                DrawStatusIcon('A_Tank','pwcs','Main Tank')
+            end
+            if TLO.Group.MainAssist.ID() == ME.ID() then
+                ImGui.SameLine()
+                DrawStatusIcon('A_Assist','pwcs','Main Assist')
+            end
+            if TLO.Group.Puller.ID() == ME.ID() then
+                ImGui.SameLine()
+                DrawStatusIcon('A_Puller','pwcs','Puller')
+            end
+            ImGui.SameLine()
+            --  ImGui.SameLine()
+            ImGui.Text(' ')
+            ImGui.SameLine()
+            ImGui.SetWindowFontScale(ZoomLvl * .75)
+            ImGui.Text(ME.Heading() or '??')
+            ImGui.PopStyleVar()
+            -- Lvl
+            ImGui.TableSetColumnIndex(3)
+            ImGui.PushStyleVar(ImGuiStyleVar.ItemSpacing, 2, 0)
+            ImGui.SetWindowFontScale(ZoomLvl)
+            ImGui.Text(tostring(ME.Level() or 0))
+            if ImGui.IsItemHovered() then
+                ImGui.BeginTooltip()
+                ImGui.SetWindowFontScale(ZoomLvl)
+                ImGui.Text(GetInfoToolTip())
+                ImGui.EndTooltip()
+            end
+            ImGui.PopStyleVar()
+            ImGui.EndTable()
+            
+        end
+        if flashBorder then ImGui.EndChild() end
+        ImGui.PopStyleVar()
+        ImGui.PushStyleVar(ImGuiStyleVar.FramePadding, 4,3)
+        ImGui.PopStyleColor()
+        ImGui.Separator()
+        -- My Health Bar
+        local yPos = ImGui.GetCursorPosY()
+        ImGui.SetWindowFontScale(ZoomLvl * 0.75)
+        if settings[script].DynamicHP then
+            local hr,hg,hb,ha = calculateColor(colorHpMin, colorHpMax, ME.PctHPs())
+            ImGui.PushStyleColor(ImGuiCol.PlotHistogram, ImVec4(hr, hg, hb, ha))
+        else
+            if ME.PctHPs() <= 0 then
+                ImGui.PushStyleColor(ImGuiCol.PlotHistogram,(COLOR.color('purple')))
+            elseif ME.PctHPs() < 15 then
+                if pulse then
+                    ImGui.PushStyleColor(ImGuiCol.PlotHistogram,(COLOR.color('orange')))
+                    if not ME.CombatState() == 'COMBAT' then pulse = false end
+                else
+                    ImGui.PushStyleColor(ImGuiCol.PlotHistogram,(COLOR.color('red')))
+                    if not ME.CombatState() == 'COMBAT' then pulse = true end
+                end
+            else
+                ImGui.PushStyleColor(ImGuiCol.PlotHistogram,(COLOR.color('red')))
+            end
+        end
+        ImGui.ProgressBar(((tonumber(ME.PctHPs() or 0)) / 100), ImGui.GetContentRegionAvail(), progressSize , '##pctHps')
+        ImGui.PopStyleColor()
+        ImGui.SetCursorPosY(yPos)
+        ImGui.SetCursorPosX(ImGui.GetCursorPosX() + ((ImGui.GetWindowWidth() / 2) - 8))
+        ImGui.Text(tostring(ME.PctHPs() or 0))
+        local yPos = ImGui.GetCursorPosY()
+        --My Mana Bar
+        if (tonumber(ME.MaxMana()) > 0) then
+            if settings[script].DynamicMP then
+                local mr,mg,mb,ma = calculateColor(colorMpMin, colorMpMax, ME.PctMana())
+                ImGui.PushStyleColor(ImGuiCol.PlotHistogram, ImVec4(mr, mg, mb, ma))
+            else
+                ImGui.PushStyleColor(ImGuiCol.PlotHistogram,(COLOR.color('light blue2')))
+            end
+            ImGui.ProgressBar(((tonumber(ME.PctMana() or 0)) / 100), ImGui.GetContentRegionAvail(), progressSize, '##pctMana')
+            ImGui.PopStyleColor()
+            ImGui.SetCursorPosY(yPos)
+            ImGui.SetCursorPosX(ImGui.GetCursorPosX() + ((ImGui.GetWindowWidth() / 2) - 8))
+            ImGui.Text(tostring(ME.PctMana() or 0))
+        end
+        local yPos = ImGui.GetCursorPosY()
+        --My Endurance bar
+        ImGui.PushStyleColor(ImGuiCol.PlotHistogram,(COLOR.color('yellow2')))
+        ImGui.ProgressBar(((tonumber(ME.PctEndurance() or 0)) / 100), ImGui.GetContentRegionAvail(), progressSize, '##pctEndurance')
+        ImGui.PopStyleColor()
+        ImGui.SetCursorPosY(yPos)
+        ImGui.SetCursorPosX(ImGui.GetCursorPosX() + ((ImGui.GetWindowWidth() / 2) - 8))
+        ImGui.Text(tostring(ME.PctEndurance() or 0))
+        ImGui.Separator()
+        ImGui.EndGroup()
+        if ImGui.IsItemHovered() and ImGui.IsMouseReleased(ImGuiMouseButton.Left) then
+            mq.cmdf("/target %s", ME())
+        end
+    
+        --Target Info
+        if not splitTarget then
+            drawTarget()
+        end
+    end
     if StyleCount > 0 then ImGui.PopStyleVar(StyleCount) else ImGui.PopStyleVar(1) end
     if ColorCount > 0 then ImGui.PopStyleColor(ColorCount) end
-    ImGui.Spacing()
     ImGui.SetWindowFontScale(1)
     ImGui.End()
-    return open
+    
+    if splitTarget and TARGET() ~= nil then
+        local colorCountTarget, styleCountTarget = DrawTheme(themeName)
+        local openT, showT = ImGui.Begin("Target##TargetPopout", true, targFlag)
+        if showT then
+            drawTarget()
+        end
+        if styleCountTarget > 0 then ImGui.PopStyleVar(styleCountTarget) else ImGui.PopStyleVar(1) end
+        if colorCountTarget > 0 then ImGui.PopStyleColor(colorCountTarget) end
+        ImGui.SetWindowFontScale(1)
+        ImGui.End()
+
+    end
 end
 
 --Setup and Loop
@@ -990,10 +1025,10 @@ local function MainLoop()
         else
             ShowGUI = true
         end
-        if not openGUI then
-            openGUI = ShowGUI
-            GUI_Target(openGUI)
-        end
+        -- if not openGUI then
+        --     openGUI = ShowGUI
+        --     GUI_Target(openGUI)
+        -- end
     end
 end
 
