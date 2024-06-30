@@ -299,8 +299,6 @@ local function DrawTheme(tName, window)
     for tID, tData in pairs(theme.Theme) do
         if tData.Name == tName then
             for pID, cData in pairs(theme.Theme[tID].Color) do
-                ImGui.PushStyleColor(pID, ImVec4(cData.Color[1], cData.Color[2], cData.Color[3], cData.Color[4]))
-                ColorCounter = ColorCounter + 1
                 if window == 'main' then
                     if cData.PropertyName == 'Border' then
                         themeBorderBG = {cData.Color[1], cData.Color[2], cData.Color[3], cData.Color[4]}
@@ -317,6 +315,9 @@ local function DrawTheme(tName, window)
                             ImGui.PushStyleColor(ImGuiCol.WindowBg, ImVec4(cData.Color[1], cData.Color[2], cData.Color[3], settings[script].WinTransparency))
                             ColorCounter = ColorCounter + 1
                         end
+                    else
+                        ImGui.PushStyleColor(pID, ImVec4(cData.Color[1], cData.Color[2], cData.Color[3], cData.Color[4]))
+                        ColorCounter = ColorCounter + 1
                     end
                 elseif window == 'targ' then
                     if cData.PropertyName == 'Border' then
@@ -334,7 +335,13 @@ local function DrawTheme(tName, window)
                             ImGui.PushStyleColor(ImGuiCol.WindowBg, ImVec4(cData.Color[1], cData.Color[2], cData.Color[3], settings[script].WinTransparency))
                             ColorCounter = ColorCounter + 1
                         end
+                    else
+                        ImGui.PushStyleColor(pID, ImVec4(cData.Color[1], cData.Color[2], cData.Color[3], cData.Color[4]))
+                        ColorCounter = ColorCounter + 1
                     end
+                else
+                    ImGui.PushStyleColor(pID, ImVec4(cData.Color[1], cData.Color[2], cData.Color[3], cData.Color[4]))
+                    ColorCounter = ColorCounter + 1
                 end
             end
             if tData['Style'] ~= nil then
