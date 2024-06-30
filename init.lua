@@ -59,6 +59,7 @@ defaults = {
         iconSize = 26,
         doPulse = true,
         SplitTarget = false,
+        showXtar = false,
         ColorHPMax = {0.992, 0.138, 0.138, 1.000},
         ColorHPMin = {0.551, 0.207, 0.962, 1.000},
         ColorMPMax = {0.231, 0.707, 0.938, 1.000},
@@ -206,6 +207,11 @@ local function loadSettings()
 
     if settings[script].SplitTarget == nil then
         settings[script].SplitTarget = false
+        newSetting = true
+    end
+
+    if settings[script].showXtar == nil then
+        settings[script].showXtar = false
         newSetting = true
     end
 
@@ -516,7 +522,7 @@ local function PlayerTargConf_GUI(open)
         progressSize = tmpPrgSz
     end
     ProgressSizeTarget = ImGui.SliderInt("Target Progress Bar Size##"..script, ProgressSizeTarget, 5, 150)
-
+    settings[script].showXtar = ImGui.Checkbox('Show XTarget Number', settings[script].showXtar)
     ImGui.SeparatorText("Pulse Settings##"..script)
     flashBorder = ImGui.Checkbox('Flash Border', flashBorder)
     ImGui.SameLine()
@@ -671,7 +677,7 @@ local function drawTarget()
             ImGui.TableNextRow()
             ImGui.TableSetColumnIndex(0)
             -- Name and CON in the first column
-            if xSlot > 0 then
+            if xSlot > 0 and settings[script].showXtar then
                 ImGui.Text("X#%s %s", xSlot, targetName)
             else
                 ImGui.Text("%s",targetName)
