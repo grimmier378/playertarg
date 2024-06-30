@@ -612,10 +612,19 @@ local function PlayerTargConf_GUI(open)
 
 end
 
+local function findXTarSlot(id)
+    for i = 1 , mq.TLO.Me.XTargetSlots() do
+        if mq.TLO.Me.XTarget(i).ID() == id then
+            return i
+        end
+    end 
+end
+
 local function drawTarget()
     if (TARGET() ~= nil) then
         ImGui.BeginGroup()
         local targetName = TARGET.CleanName() or '?'
+        local xSlot = findXTarSlot(TARGET.ID()) or 0
         local tC = getConLevel(TARGET) or "WHITE"
         if tC == 'red' then tC = 'pink' end
         local tClass = TARGET.Class.ShortName() == 'UNKNOWN CLASS' and Icons.MD_HELP_OUTLINE or
@@ -651,8 +660,13 @@ local function drawTarget()
             ImGui.TableSetupColumn("##col2", ImGuiTableColumnFlags.NoResize, (ImGui.GetContentRegionAvail() * .5) + 8) -- Adjust width for distance and Aggro% text
             -- First Row: Name, con, distance
             ImGui.TableNextRow()
-            ImGui.TableSetColumnIndex(0) -- Name and CON in the first column
-            ImGui.Text(targetName)
+            ImGui.TableSetColumnIndex(0)
+            -- Name and CON in the first column
+            if xSlot > 0 then
+                ImGui.Text("X#%s %s", xSlot, targetName)
+            else
+                ImGui.Text("%s",targetName)
+            end
             -- Distance in the second column
             ImGui.TableSetColumnIndex(1)
     
@@ -663,8 +677,10 @@ local function drawTarget()
                 ImGui.Text('   ' .. Icons.MD_LENS)
             end
             ImGui.PopStyleColor()
+            
             ImGui.SameLine(ImGui.GetColumnWidth() - 35)
             ImGui.PushStyleColor(ImGuiCol.Text,COLOR.color('yellow'))
+
             ImGui.Text(tostring(math.floor(TARGET.Distance() or 0)) .. 'm')
             ImGui.PopStyleColor()
             -- Second Row: Class, Level, and Aggro%
