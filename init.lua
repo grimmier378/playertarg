@@ -302,8 +302,10 @@ local function DrawTheme(tName, window)
                 if window == 'main' then
                     if cData.PropertyName == 'Border' then
                         themeBorderBG = {cData.Color[1], cData.Color[2], cData.Color[3], cData.Color[4]}
+                        ColorCounter = ColorCounter + 1
                     elseif cData.PropertyName == 'TableRowBg' then
                         themeRowBG = {cData.Color[1], cData.Color[2], cData.Color[3], cData.Color[4]}
+                        ColorCounter = ColorCounter + 1
                     elseif cData.PropertyName == 'WindowBg' then
                         if not settings[script].MouseOver then
                             ImGui.PushStyleColor(ImGuiCol.WindowBg, ImVec4(cData.Color[1], cData.Color[2], cData.Color[3], settings[script].WinTransparency))
@@ -322,8 +324,10 @@ local function DrawTheme(tName, window)
                 elseif window == 'targ' then
                     if cData.PropertyName == 'Border' then
                         themeBorderBG = {cData.Color[1], cData.Color[2], cData.Color[3], cData.Color[4]}
+                        ColorCounter = ColorCounter + 1
                     elseif cData.PropertyName == 'TableRowBg' then
                         themeRowBG = {cData.Color[1], cData.Color[2], cData.Color[3], cData.Color[4]}
+                        ColorCounter = ColorCounter + 1
                     elseif cData.PropertyName == 'WindowBg' then
                         if not settings[script].MouseOver then
                             ImGui.PushStyleColor(ImGuiCol.WindowBg, ImVec4(cData.Color[1], cData.Color[2], cData.Color[3], settings[script].WinTransparency))
