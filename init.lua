@@ -37,6 +37,7 @@ local colorMpMax = {0.231, 0.707, 0.938, 1.000}
 local colorMpMin = {0.600, 0.231, 0.938, 1.000}
 local testValue, testValue2 = 100, 100
 local splitTarget = false
+local mouseHud, mouseHudTarg = false, false
 local ProgressSizeTarget = 30
 
 -- Flags
@@ -69,6 +70,8 @@ defaults = {
         DynamicHP = false,
         DynamicMP = false,
         FlashBorder = true,
+        MouseOver = false,
+        WinTransparency = 1.0,
         ProgressSize = 10,
         ProgressSizeTarget = 30,
 }
@@ -215,6 +218,19 @@ local function loadSettings()
         newSetting = true
     end
 
+    --[[        MouseOver = false,
+    WinTransparency = 1.0,]]
+    if settings[script].MouseOver == nil then
+        settings[script].MouseOver = false
+        newSetting = true
+    end
+
+    if settings[script].WinTransparency == nil then
+        settings[script].WinTransparency = 1.0
+        newSetting = true
+    end
+
+
     splitTarget = settings[script].SplitTarget
     colorHpMax = settings[script].ColorHPMax
     colorHpMin = settings[script].ColorHPMin
@@ -275,8 +291,9 @@ end
 
 ---comment
 ---@param tName string -- name of the theme to load form table
+---@param window string -- name of the window to apply the theme to
 ---@return integer, integer -- returns the new counter values 
-local function DrawTheme(tName)
+local function DrawTheme(tName, window)
     local StyleCounter = 0
     local ColorCounter = 0
     for tID, tData in pairs(theme.Theme) do
@@ -284,10 +301,40 @@ local function DrawTheme(tName)
             for pID, cData in pairs(theme.Theme[tID].Color) do
                 ImGui.PushStyleColor(pID, ImVec4(cData.Color[1], cData.Color[2], cData.Color[3], cData.Color[4]))
                 ColorCounter = ColorCounter + 1
-                if cData.PropertyName == 'Border' then
-                    themeBorderBG = {cData.Color[1], cData.Color[2], cData.Color[3], cData.Color[4]}
-                elseif cData.PropertyName == 'TableRowBg' then
-                    themeRowBG = {cData.Color[1], cData.Color[2], cData.Color[3], cData.Color[4]}
+                if window == 'main' then
+                    if cData.PropertyName == 'Border' then
+                        themeBorderBG = {cData.Color[1], cData.Color[2], cData.Color[3], cData.Color[4]}
+                    elseif cData.PropertyName == 'TableRowBg' then
+                        themeRowBG = {cData.Color[1], cData.Color[2], cData.Color[3], cData.Color[4]}
+                    elseif cData.PropertyName == 'WindowBg' then
+                        if not settings[script].MouseOver then
+                            ImGui.PushStyleColor(ImGuiCol.WindowBg, ImVec4(cData.Color[1], cData.Color[2], cData.Color[3], settings[script].WinTransparency))
+                            ColorCounter = ColorCounter + 1
+                        elseif settings[script].MouseOver and mouseHud then
+                            ImGui.PushStyleColor(ImGuiCol.WindowBg, ImVec4(cData.Color[1], cData.Color[2], cData.Color[3], 1.0))
+                            ColorCounter = ColorCounter + 1
+                        elseif settings[script].MouseOver and not mouseHud then
+                            ImGui.PushStyleColor(ImGuiCol.WindowBg, ImVec4(cData.Color[1], cData.Color[2], cData.Color[3], settings[script].WinTransparency))
+                            ColorCounter = ColorCounter + 1
+                        end
+                    end
+                elseif window == 'targ' then
+                    if cData.PropertyName == 'Border' then
+                        themeBorderBG = {cData.Color[1], cData.Color[2], cData.Color[3], cData.Color[4]}
+                    elseif cData.PropertyName == 'TableRowBg' then
+                        themeRowBG = {cData.Color[1], cData.Color[2], cData.Color[3], cData.Color[4]}
+                    elseif cData.PropertyName == 'WindowBg' then
+                        if not settings[script].MouseOver then
+                            ImGui.PushStyleColor(ImGuiCol.WindowBg, ImVec4(cData.Color[1], cData.Color[2], cData.Color[3], settings[script].WinTransparency))
+                            ColorCounter = ColorCounter + 1
+                        elseif settings[script].MouseOver and mouseHudTarg then
+                            ImGui.PushStyleColor(ImGuiCol.WindowBg, ImVec4(cData.Color[1], cData.Color[2], cData.Color[3], 1.0))
+                            ColorCounter = ColorCounter + 1
+                        elseif settings[script].MouseOver and not mouseHudTarg then
+                            ImGui.PushStyleColor(ImGuiCol.WindowBg, ImVec4(cData.Color[1], cData.Color[2], cData.Color[3], settings[script].WinTransparency))
+                            ColorCounter = ColorCounter + 1
+                        end
+                    end
                 end
             end
             if tData['Style'] ~= nil then
@@ -462,7 +509,7 @@ local function PlayerTargConf_GUI(open)
     if not openConfigGUI then return end
     ColorCountConf = 0
 	StyleCountConf = 0
-    ColorCountConf, StyleCountConf = DrawTheme(themeName)
+    ColorCountConf, StyleCountConf = DrawTheme(themeName, 'config')
     open, openConfigGUI = ImGui.Begin("PlayerTarg Conf##"..script, open, bit32.bor(ImGuiWindowFlags.None, ImGuiWindowFlags.NoCollapse, ImGuiWindowFlags.AlwaysAutoResize))
     ImGui.SetWindowFontScale(ZoomLvl)
     if not openConfigGUI then
@@ -495,6 +542,8 @@ local function PlayerTargConf_GUI(open)
         loadTheme()
     end
     
+    settings[script].MouseOver = ImGui.Checkbox('Mouse Over', settings[script].MouseOver)
+    settings[script].WinTransparency = ImGui.SliderFloat('Window Transparency##'..script, settings[script].WinTransparency, 0.1, 1.0)
     ImGui.SeparatorText("Scaling##"..script)
     -- Slider for adjusting zoom level
     local tmpZoom = ZoomLvl
@@ -775,13 +824,15 @@ function GUI_Target()
     local flags = winFlag
     -- Default window size
     ImGui.SetNextWindowSize(216, 239, ImGuiCond.FirstUseEver)
-    ColorCount, StyleCount = DrawTheme(themeName)
-    
+    ColorCount, StyleCount = DrawTheme(themeName,'main')
     if locked then
         flags = bit32.bor(ImGuiWindowFlags.NoTitleBar, ImGuiWindowFlags.NoScrollbar, ImGuiWindowFlags.MenuBar, ImGuiWindowFlags.NoMove, ImGuiWindowFlags.NoScrollWithMouse)
     end
     local open, show = ImGui.Begin(ME.DisplayName().."##Target", true, flags)
     if show then
+        
+        mouseHud = ImGui.IsWindowHovered(ImGuiHoveredFlags.ChildWindows)
+
     -- ImGui.BeginGroup()
         if ImGui.BeginMenuBar() then
             -- if ZoomLvl > 1.25 then ImGui.PushStyleVar(ImGuiStyleVar.FramePadding, 4,7) end
@@ -1022,16 +1073,21 @@ function GUI_Target()
         end
         ImGui.PopStyleVar(2)
     end
-    
     if StyleCount > 0 then ImGui.PopStyleVar(StyleCount) end
     if ColorCount > 0 then ImGui.PopStyleColor(ColorCount) end
     ImGui.SetWindowFontScale(1)
     ImGui.End()
+
     
     if splitTarget and TARGET() ~= nil then
-        local colorCountTarget, styleCountTarget = DrawTheme(themeName)
+        local colorCountTarget, styleCountTarget = DrawTheme(themeName, 'targ')
         local openT, showT = ImGui.Begin("Target##TargetPopout", true, targFlag)
         if showT then
+            if ImGui.IsWindowHovered(ImGuiHoveredFlags.ChildWindows) then
+                mouseHudTarg = true
+            else
+                mouseHudTarg = false
+            end
             ImGui.PushStyleVar(ImGuiStyleVar.WindowPadding, 1,1)
             ImGui.PushStyleVar(ImGuiStyleVar.FramePadding, 4,2)
             drawTarget()
