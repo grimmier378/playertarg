@@ -25,7 +25,8 @@ local flashAlpha, ZoomLvl, cAlpha = 1, 1, 255
 local ShowGUI, locked, flashBorder, rise, cRise = true, false, true, true, false
 local openConfigGUI, openGUI, running = false, true, false
 local themeFile = mq.configDir .. '/MyThemeZ.lua'
-local configFile = mq.configDir .. '/MyUI_Configs.lua'
+local configFileOld = mq.configDir .. '/MyUI_Configs.lua'
+local configFile = string.format('%s/MyUI/PlayerTarg/%s/%s.lua', mq.configDir,mq.TLO.EverQuest.Server(), mq.TLO.Me.Name())
 local ColorCount, ColorCountConf, StyleCount, StyleCountConf = 0, 0, 0, 0
 local themeName = 'Default'
 local script = 'PlayerTarg'
@@ -35,11 +36,17 @@ local colorHpMax = {0.992, 0.138, 0.138, 1.000}
 local colorHpMin = {0.551, 0.207, 0.962, 1.000}
 local colorMpMax = {0.231, 0.707, 0.938, 1.000}
 local colorMpMin = {0.600, 0.231, 0.938, 1.000}
+local colorBreathMin = {0.600, 0.231, 0.938, 1.000}
+local colorBreathMax = {0.231, 0.707, 0.938, 1.000}
 local testValue, testValue2 = 100, 100
 local splitTarget = false
 local mouseHud, mouseHudTarg = false, false
 local ProgressSizeTarget = 30
-
+local showTitleBreath = false
+local bLocked = false
+local breathBarShow = false
+local enableBreathBar = false
+local breathPct = 100
 -- Flags
 
 local tPlayerFlags = bit32.bor(ImGuiTableFlags.NoBordersInBody, ImGuiTableFlags.NoPadInnerX,
@@ -65,6 +72,11 @@ defaults = {
         ColorHPMin = {0.551, 0.207, 0.962, 1.000},
         ColorMPMax = {0.231, 0.707, 0.938, 1.000},
         ColorMPMin = {0.600, 0.231, 0.938, 1.000},
+        ColorBreathMin = {0.600, 0.231, 0.938, 1.000},
+        ColorBreathMax = {0.231, 0.707, 0.938, 1.000},
+        BreathLocked = false,
+        ShowTitleBreath = false,
+        EnableBreathBar = false,
         pulseSpeed = 5,
         combatPulseSpeed = 10,
         DynamicHP = false,
@@ -98,14 +110,6 @@ local function File_Exists(name)
     if f~=nil then io.close(f) return true else return false end
 end
 
----comment Writes settings from the settings table passed to the setting file (full path required)
--- Uses mq.pickle to serialize the table and write to file
----@param file string -- File Name and path
----@param table table -- Table of settings to write
-local function writeSettings(file, table)
-    mq.pickle(file, table)
-end
-
 local function loadTheme()
     if File_Exists(themeFile) then
         theme = dofile(themeFile)
@@ -117,15 +121,27 @@ end
 
 local function loadSettings()
     if not File_Exists(configFile) then
-        mq.pickle(configFile, defaults)
-        loadSettings()
+        if File_Exists(configFileOld) then
+            local tmpOld = {}
+            tmpOld = dofile(configFileOld)
+            for k, v in pairs(tmpOld) do
+                if k == script then
+                    settings[script] = v
+                end
+            end
+            mq.pickle(configFile, settings)
+        else
+            settings[script] = {}
+            settings[script] = defaults
+            mq.pickle(configFile, settings)
+        end
     else
-
-    -- Load settings from the Lua config file
-    settings = dofile(configFile)
-    if not settings[script] then
-        settings[script] = {}
-        settings[script] = defaults end
+        -- Load settings from the Lua config file
+        settings = dofile(configFile)
+        if not settings[script] then
+            settings[script] = {}
+            settings[script] = defaults
+        end
     end
 
     loadTheme()
@@ -218,6 +234,33 @@ local function loadSettings()
         newSetting = true
     end
 
+    if settings[script].ColorBreathMin == nil then
+        settings[script].ColorBreathMin = defaults.ColorBreathMin
+        newSetting = true
+    end
+
+    if settings[script].ColorBreathMax == nil then
+        settings[script].ColorBreathMax = defaults.ColorBreathMax
+        newSetting = true
+    end
+
+    if settings[script].BreathLocked == nil then
+        settings[script].BreathLocked = false
+        newSetting = true
+    end
+
+    if settings[script].ShowTitleBreath == nil then
+        settings[script].ShowTitleBreath = false
+        newSetting = true
+    end
+
+    if settings[script].EnableBreathBar == nil then
+        settings[script].EnableBreathBar = false
+        newSetting = true
+    end
+
+
+
     --[[        MouseOver = false,
     WinTransparency = 1.0,]]
     if settings[script].MouseOver == nil then
@@ -230,7 +273,11 @@ local function loadSettings()
         newSetting = true
     end
 
-
+    colorBreathMin = settings[script].ColorBreathMin
+    colorBreathMax = settings[script].ColorBreathMax
+    showTitleBreath = settings[script].ShowTitleBreath
+    bLocked = settings[script].BreathLocked
+    enableBreathBar = settings[script].EnableBreathBar
     splitTarget = settings[script].SplitTarget
     colorHpMax = settings[script].ColorHPMax
     colorHpMin = settings[script].ColorHPMin
@@ -247,7 +294,7 @@ local function loadSettings()
     themeName = settings[script].LoadTheme
     ProgressSizeTarget = settings[script].ProgressSizeTarget
 
-    if newSetting then writeSettings(configFile, settings) end
+    if newSetting then mq.pickle(configFile, settings) end
 end
 
 local lastTime = os.clock()
@@ -636,6 +683,7 @@ local function PlayerTargConf_GUI(open)
 
     testValue = ImGui.SliderInt("Test HP##"..script, testValue, 0, 100)
     local r, g, b, a = CalculateColor(colorHpMin, colorHpMax, testValue)
+
     ImGui.PushStyleColor(ImGuiCol.PlotHistogram,ImVec4(r, g, b, a))
     ImGui.ProgressBar((testValue / 100), ImGui.GetContentRegionAvail(), progressSize , '##Test')
     ImGui.PopStyleColor()
@@ -653,12 +701,33 @@ local function PlayerTargConf_GUI(open)
     testValue2 = ImGui.SliderInt("Test MP##"..script, testValue2, 0, 100)
     local r2, g2, b2, a2 = CalculateColor(colorMpMin, colorMpMax, testValue2)
     ImGui.PushStyleColor(ImGuiCol.PlotHistogram,ImVec4(r2, g2, b2, a2))
-    ImGui.ProgressBar((testValue2 / 100), ImGui.GetContentRegionAvail(), progressSize , '##Test')
+    ImGui.ProgressBar((testValue2 / 100), ImGui.GetContentRegionAvail(), progressSize , '##Test2')
+    ImGui.PopStyleColor()
+
+    -- breath bar settings
+    local tmpbreath = settings[script].EnableBreathBar
+    tmpbreath = ImGui.Checkbox('Enable Breath', tmpbreath)
+    if tmpbreath ~= settings[script].EnableBreathBar then
+        settings[script].EnableBreathBar = tmpbreath
+    end
+    ImGui.SameLine()
+    ImGui.SetNextItemWidth(60)
+    colorBreathMin = ImGui.ColorEdit4("Breath Min Color##"..script, colorBreathMin, bit32.bor( ImGuiColorEditFlags.NoInputs))
+    ImGui.SameLine()
+    ImGui.SetNextItemWidth(60)
+    colorBreathMax = ImGui.ColorEdit4("Breath Max Color##"..script, colorBreathMax, bit32.bor( ImGuiColorEditFlags.NoInputs))
+    local testValue3 = 100
+    testValue3 = ImGui.SliderInt("Test Breath##"..script, testValue3, 0, 100)
+    local r3, g3, b3, a3 = CalculateColor(colorBreathMin, colorBreathMax, testValue3)
+    ImGui.PushStyleColor(ImGuiCol.PlotHistogram,ImVec4(r3, g3, b3, a3))
+    ImGui.ProgressBar((testValue3 / 100), ImGui.GetContentRegionAvail(), progressSize , '##Test3')
     ImGui.PopStyleColor()
 
     ImGui.SeparatorText("Save and Close##"..script)
     if ImGui.Button('Save and Close##'..script) then
         openConfigGUI = false
+        settings[script].ColorBreathMin = colorBreathMin
+        settings[script].ColorBreathMax = colorBreathMax
         settings[script].ProgressSizeTarget = ProgressSizeTarget
         settings[script].ColorHPMax = colorHpMax
         settings[script].ColorHPMin = colorHpMin
@@ -674,7 +743,7 @@ local function PlayerTargConf_GUI(open)
         settings[script].doPulse = pulse
         settings[script].pulseSpeed = pulseSpeed
         settings[script].combatPulseSpeed = combatPulseSpeed
-        writeSettings(configFile,settings)
+        mq.pickle(configFile,settings)
     end
     if StyleCountConf > 0 then ImGui.PopStyleVar(StyleCountConf) end
     if ColorCountConf > 0 then ImGui.PopStyleColor(ColorCountConf) end
@@ -714,6 +783,7 @@ local function drawTarget()
                 ImGui.PushStyleColor(ImGuiCol.PlotHistogram,(COLOR.color('red')))
             end
         end
+        local yPos = ImGui.GetCursorPosY() -2
         ImGui.ProgressBar(((tonumber(TARGET.PctHPs() or 0)) / 100), ImGui.GetContentRegionAvail(), ProgressSizeTarget,'##' .. TARGET.PctHPs())
         ImGui.PopStyleColor()
                     
@@ -724,7 +794,7 @@ local function drawTarget()
             ImGui.EndTooltip()
         end
         ImGui.SetWindowFontScale(ZoomLvl)
-        ImGui.SetCursorPosY(ImGui.GetCursorPosY() - (ProgressSizeTarget + 4))
+        ImGui.SetCursorPosY(yPos)
         ImGui.SetCursorPosX(9)
         if ImGui.BeginTable("##targetInfoOverlay", 2, tPlayerFlags) then
             ImGui.TableSetupColumn("##col1", ImGuiTableColumnFlags.NoResize, (ImGui.GetContentRegionAvail() * .5) - 8)
@@ -771,7 +841,7 @@ local function drawTarget()
         --Aggro % Bar
         ImGui.PushStyleVar(ImGuiStyleVar.ItemSpacing, 8, 1)
         if (TARGET.Aggressive) then
-            local yPos = ImGui.GetCursorPosY() +2
+            yPos = ImGui.GetCursorPosY() -2
             ImGui.BeginGroup()
             if TARGET.PctAggro() < 100 then 
                 ImGui.PushStyleColor(ImGuiCol.PlotHistogram,(COLOR.color('orange')))
@@ -850,7 +920,7 @@ function GUI_Target()
                 locked = not locked
                 settings = dofile(configFile)
                 settings[script].locked = locked
-                writeSettings(configFile, settings)
+                mq.pickle(configFile, settings)
             end
             if ImGui.IsItemHovered() then
                 ImGui.SetWindowFontScale(ZoomLvl)
@@ -866,7 +936,7 @@ function GUI_Target()
                 splitTarget = not splitTarget
                 settings = dofile(configFile)
                 settings[script].SplitTarget = splitTarget
-                writeSettings(configFile, settings)
+                mq.pickle(configFile, settings)
             end
             if ImGui.IsItemHovered() then
                 ImGui.SetWindowFontScale(ZoomLvl)
@@ -1106,6 +1176,43 @@ function GUI_Target()
         ImGui.SetWindowFontScale(1)
         ImGui.End()
     end
+
+    if enableBreathBar and breathBarShow then
+        local bFlags = bit32.bor(ImGuiWindowFlags.NoScrollbar, ImGuiWindowFlags.NoScrollWithMouse, ImGuiWindowFlags.NoFocusOnAppearing)
+        if bLocked then bFlags = bit32.bor(bFlags, ImGuiWindowFlags.NoMove) end
+        if not showTitleBreath then bFlags = bit32.bor(bFlags, ImGuiWindowFlags.NoTitleBar) end
+            
+        
+        local ColorCountBreath, StyleCountBreath  = DrawTheme(themeName, 'breath')
+        ImGui.SetNextWindowSize(ImVec2(150, 55), ImGuiCond.FirstUseEver)
+        ImGui.SetNextWindowPos(ImGui.GetMousePosVec(), ImGuiCond.FirstUseEver)
+        local openBreath, showBreath = ImGui.Begin('Breath##MyBreathWin_'..mq.TLO.Me.Name(), true, bFlags)
+        if not openBreath then
+            breathBarShow = false
+        end
+        if showBreath then
+            
+            local yPos = ImGui.GetCursorPosY()
+            local red,green,blu,alpha = CalculateColor(colorBreathMin, colorBreathMax, breathPct)
+            ImGui.PushStyleColor(ImGuiCol.PlotHistogram, ImVec4(red, green, blu, alpha))
+            ImGui.ProgressBar((breathPct / 100), ImGui.GetContentRegionAvail(), progressSize , '##pctBreath')
+            ImGui.PopStyleColor()
+            if ImGui.BeginPopupContextItem("##MySpells_CastWin") then
+
+                local lockLabel = bLocked and 'Unlock' or 'Lock'
+                if ImGui.MenuItem(lockLabel.."##Breath") then
+                    bLocked = not bLocked
+        
+                    settings[script].BreathLocked = bLocked
+                    mq.pickle(configFile, settings)
+                end
+                ImGui.EndPopup()
+            end
+        end
+        if StyleCountBreath > 0 then ImGui.PopStyleVar(StyleCountBreath) end
+        if ColorCountBreath > 0 then ImGui.PopStyleColor(ColorCountBreath) end
+        ImGui.End()
+    end
 end
 
 --Setup and Loop
@@ -1119,8 +1226,8 @@ end
 
 local function MainLoop()
     while running do
-        if TLO.Window('CharacterListWnd').Open() then return false end
-        mq.delay(100)
+        if mq.TLO.EverQuest.GameState() ~= "INGAME" then mq.exit() end
+        mq.delay(10)
         pulseIcon(pulseSpeed)
         pulseCombat(combatPulseSpeed)
         if ME.Zoning() then
@@ -1128,13 +1235,16 @@ local function MainLoop()
         else
             ShowGUI = true
         end
-        -- if not openGUI then
-        --     openGUI = ShowGUI
-        --     GUI_Target(openGUI)
-        -- end
+        breathPct = mq.TLO.Me.PctAirSupply() or 100
+        if breathPct < 100 then
+            breathBarShow = true
+        else
+            breathBarShow = false
+        end
     end
 end
 
+if mq.TLO.EverQuest.GameState() ~= "INGAME" then mq.exit() end
 init()
 printf("\ag %s \aw[\ayPlayer Targ\aw] ::\a-t Loaded",TLO.Time())
 MainLoop()
