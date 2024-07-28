@@ -148,129 +148,11 @@ local function loadSettings()
 
     local newSetting = false
 
-    if settings[script].doPulse == nil then
-        settings[script].doPulse = true
-        newSetting = true
-    end
-    if settings[script].pulseSpeed == nil then
-        settings[script].pulseSpeed = 5
-        newSetting = true
-    end
-    if settings[script].combatPulseSpeed == nil then
-        settings[script].combatPulseSpeed = 10
-        newSetting = true
-    end
-    if settings[script].locked == nil then
-        settings[script].locked = false
-        newSetting = true
-    end
-    if settings[script].FlashBorder == nil then
-        settings[script].FlashBorder = true
-        newSetting = true
-    end
-
-    if settings[script].Scale == nil then
-        settings[script].Scale = 1
-        newSetting = true
-    end
-
-    if settings[script].IconSize == nil then
-        settings[script].IconSize = 26
-        newSetting = true
-    end
-
-    if settings[script].ColorHPMax == nil then
-        settings[script].ColorHPMax = defaults.ColorHPMax
-        newSetting = true
-    end
-
-    if settings[script].ColorHPMin == nil then
-        settings[script].ColorHPMin = defaults.ColorHPMin
-        newSetting = true
-    end
-
-    if settings[script].ColorMPMax == nil then
-        settings[script].ColorMPMax = defaults.ColorMPMax
-        newSetting = true
-    end
-
-    if settings[script].ColorMPMin == nil then
-        settings[script].ColorMPMin = defaults.ColorMPMin
-        newSetting = true
-    end
-
-    if settings[script].DynamicHP == nil then
-        settings[script].DynamicHP = false
-        newSetting = true
-    end
-
-    if settings[script].DynamicMP == nil then
-        settings[script].DynamicMP = false
-        newSetting = true
-    end
-
-    if settings[script].LoadTheme == nil then
-        settings[script].LoadTheme = theme.LoadTheme
-        newSetting = true
-    end
-
-    if settings[script].ProgressSize == nil then
-        settings[script].ProgressSize = progressSize
-        newSetting = true
-    end
-    
-    if settings[script].ProgressSizeTarget == nil then
-        settings[script].ProgressSizeTarget = 30
-        newSetting = true
-    end
-
-    if settings[script].SplitTarget == nil then
-        settings[script].SplitTarget = false
-        newSetting = true
-    end
-
-    if settings[script].showXtar == nil then
-        settings[script].showXtar = false
-        newSetting = true
-    end
-
-    if settings[script].ColorBreathMin == nil then
-        settings[script].ColorBreathMin = defaults.ColorBreathMin
-        newSetting = true
-    end
-
-    if settings[script].ColorBreathMax == nil then
-        settings[script].ColorBreathMax = defaults.ColorBreathMax
-        newSetting = true
-    end
-
-    if settings[script].BreathLocked == nil then
-        settings[script].BreathLocked = false
-        newSetting = true
-    end
-
-    if settings[script].ShowTitleBreath == nil then
-        settings[script].ShowTitleBreath = false
-        newSetting = true
-    end
-
-    if settings[script].EnableBreathBar == nil then
-        settings[script].EnableBreathBar = false
-        newSetting = true
-    end
-
-
-
-    --[[        MouseOver = false,
-    WinTransparency = 1.0,]]
-    if settings[script].MouseOver == nil then
-        settings[script].MouseOver = false
-        newSetting = true
-    end
-
-    if settings[script].WinTransparency == nil then
-        settings[script].WinTransparency = 1.0
-        newSetting = true
+    for k, v in pairs(defaults) do
+        if settings[script][k] == nil then
+            settings[script][k] = v
+            newSetting = true
+        end
     end
 
     colorBreathMin = settings[script].ColorBreathMin
@@ -297,44 +179,39 @@ local function loadSettings()
     if newSetting then mq.pickle(configFile, settings) end
 end
 
-local lastTime = os.clock()
-local frameTime = 1 / 60 -- time for each frame at 60 fps
-local function pulseIcon(speed)
-    if speed == 0 then flashAlpha = 0 pulse = false return end
+local function pulseGeneric(speed, alpha, rising, lastTime, frameTime, maxAlpha, minAlpha)
+    if speed == 0 then return alpha, rising, lastTime end
     local currentTime = os.clock()
     if currentTime - lastTime < frameTime then
-        return -- exit if not enough time has passed
+        return alpha, rising, lastTime -- exit if not enough time has passed
     end
     lastTime = currentTime -- update the last time
-    if rise == true then
-        flashAlpha = flashAlpha + speed
-        elseif rise == false then
-        flashAlpha = flashAlpha - speed
+    if rising then
+        alpha = alpha + speed
+    else
+        alpha = alpha - speed
     end
-    if flashAlpha == 200 then rise = false end
-    if flashAlpha == 10 then rise = true end
+    if alpha >= maxAlpha then
+        rising = false
+    elseif alpha <= minAlpha then
+        rising = true
+    end
+    return alpha, rising, lastTime
 end
 
-local lastTimeCombat = os.clock()
-local frameTimeCombat = 1 / 120 -- time for each frame at 60 fps
-local function pulseCombat(combatPulseSpeed)
-    if combatPulseSpeed == 0 then cAlpha = 255 return end
-    local currentTime = os.clock()
-    if currentTime - lastTimeCombat < frameTimeCombat then
-        return -- exit if not enough time has passed
-    end
-    lastTimeCombat = currentTime -- update the last time
-    if cRise then
-        cAlpha = cAlpha + combatPulseSpeed
-    else
-        cAlpha = cAlpha - combatPulseSpeed
-    end
-    if cAlpha >= 250 then
-        cRise = false
-    elseif cAlpha < 10 then
-        cRise = true
-    end
+local lastTime, lastTimeCombat = os.clock(), os.clock()
+local frameTime, frameTimeCombat = 1 / 60, 1 / 120
+
+local function pulseIcon(speed)
+    flashAlpha, rise, lastTime = pulseGeneric(speed, flashAlpha, rise, lastTime, frameTime, 200, 10)
+    if speed == 0 then flashAlpha = 0 end
 end
+
+local function pulseCombat(speed)
+    cAlpha, cRise, lastTimeCombat = pulseGeneric(speed, cAlpha, cRise, lastTimeCombat, frameTimeCombat, 250, 10)
+    if speed == 0 then cAlpha = 255 end
+end
+
 
 ---comment
 ---@param tName string -- name of the theme to load form table
@@ -1231,11 +1108,7 @@ local function MainLoop()
         mq.delay(10)
         pulseIcon(pulseSpeed)
         pulseCombat(combatPulseSpeed)
-        if ME.Zoning() then
-            ShowGUI = false
-        else
-            ShowGUI = true
-        end
+
         breathPct = mq.TLO.Me.PctAirSupply() or 100
         if breathPct < 100 then
             breathBarShow = true
