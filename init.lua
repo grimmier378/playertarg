@@ -64,7 +64,7 @@ defaults = {
         Scale = 1.0,
         LoadTheme = 'Default',
         locked = false,
-        iconSize = 26,
+        IconSize = 26,
         doPulse = true,
         SplitTarget = false,
         showXtar = false,
@@ -154,7 +154,11 @@ local function loadSettings()
             newSetting = true
         end
     end
-
+    if settings[script].iconSize ~= nil then
+        settings[script].IconSize = settings[script].iconSize
+        settings[script].iconSize = nil
+        newSetting = true
+    end
     colorBreathMin = settings[script].ColorBreathMin
     colorBreathMax = settings[script].ColorBreathMax
     showTitleBreath = settings[script].ShowTitleBreath
