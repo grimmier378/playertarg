@@ -21,7 +21,7 @@ local TARGET = TLO.Target
 local BUFF = TLO.Target.Buff
 local pulse = true
 local iconSize, progressSize = 26, 10
-local flashAlpha, ZoomLvl, cAlpha = 1, 1, 255
+local flashAlpha, FontScale, cAlpha = 1, 1, 255
 local ShowGUI, locked, flashBorder, rise, cRise = true, false, true, true, false
 local openConfigGUI, openGUI, running = false, true, false
 local themeFile = mq.configDir .. '/MyThemeZ.lua'
@@ -91,15 +91,10 @@ defaults = {
 -- Functions
 
 local function GetInfoToolTip()
-    local pInfoToolTip = (ME.DisplayName() ..
-        '\t\tlvl: ' .. tostring(ME.Level()) ..
-        '\nClass: \t ' .. ME.Class.Name() ..
-        '\nHealth:\t' .. tostring(ME.CurrentHPs()) .. ' of ' .. tostring(ME.MaxHPs()) ..
-        '\nMana:  \t' .. tostring(ME.CurrentMana()) .. ' of ' .. tostring(ME.MaxMana()) ..
-        '\nEnd: \t\t ' .. tostring(ME.CurrentEndurance()) .. ' of ' .. tostring(ME.MaxEndurance()) ..
-        string.format("\nExp: %d%s",tonumber(ME.PctExp() or 0), '%')
+    return string.format(
+        '%s\t\tlvl: %d\nClass: \t %s\nHealth:\t%d of %d\nMana:  \t%d of %d\nEnd: \t\t %d of %d\nExp: %d',
+        ME.DisplayName(),ME.Level(),ME.Class.Name(),ME.CurrentHPs(),ME.MaxHPs(),ME.CurrentMana(),ME.MaxMana(),ME.CurrentEndurance(),ME.MaxEndurance(),(ME.PctExp() or 0)
     )
-    return pInfoToolTip
 end
 
 ---comment Check to see if the file we want to work on exists.
@@ -176,7 +171,7 @@ local function loadSettings()
     progressSize = settings[script].ProgressSize
     iconSize = settings[script].IconSize
     locked = settings[script].locked
-    ZoomLvl = settings[script].Scale
+    FontScale = settings[script].Scale
     themeName = settings[script].LoadTheme
     ProgressSizeTarget = settings[script].ProgressSizeTarget
 
@@ -304,7 +299,7 @@ local function getDuration(i)
     return sRemaining
 end
 
-function CalculateColor(minColor, maxColor, value)
+local function CalculateColor(minColor, maxColor, value)
     -- Ensure value is within the range of 0 to 100
     value = math.max(0, math.min(100, value))
 
@@ -327,7 +322,7 @@ end
 ---@param iconID integer
 ---@param spell MQSpell
 ---@param i integer
-function DrawInspectableSpellIcon(iconID, spell, i)
+local function DrawInspectableSpellIcon(iconID, spell, i)
     local cursor_x, cursor_y = ImGui.GetCursorPos()
     local beniColor = IM_COL32(0,20,180,190) -- blue benificial default color
     animSpell:SetTextureCell(iconID or 0)
@@ -364,17 +359,14 @@ function DrawInspectableSpellIcon(iconID, spell, i)
                 mq.cmdf("/nomodkey /altkey /notify TargetWindow Buff%s leftmouseup", i-1)
             end
         end
-        ImGui.SetWindowFontScale(ZoomLvl)
-        ImGui.BeginTooltip()
-        ImGui.Text(sName .. '\n' .. getDuration(i))
-        ImGui.EndTooltip()
+        ImGui.SetTooltip('%s\n%s',sName, getDuration(i))
     end
     ImGui.PopID()
 end
 
 ---@param type string
 ---@param txt string
-function DrawStatusIcon(iconID, type, txt)
+local function DrawStatusIcon(iconID, type, txt)
     animSpell:SetTextureCell(iconID or 0)
     animItem:SetTextureCell(iconID or 3996)
     if type == 'item' then
@@ -387,10 +379,7 @@ function DrawStatusIcon(iconID, type, txt)
         ImGui.DrawTextureAnimation(animSpell, iconSize - 9, iconSize - 9)
     end
         if ImGui.IsItemHovered() then
-            ImGui.SetWindowFontScale(ZoomLvl)
-            ImGui.BeginTooltip()
-            ImGui.Text(txt)
-            ImGui.EndTooltip()
+            ImGui.SetTooltip(txt)
         end
 end
 
@@ -446,159 +435,162 @@ local function PlayerTargConf_GUI()
 	StyleCountConf = 0
     ColorCountConf, StyleCountConf = DrawTheme(themeName, 'config')
     local open, showConfigGUI = ImGui.Begin("PlayerTarg Conf##"..script, true, bit32.bor(ImGuiWindowFlags.None, ImGuiWindowFlags.NoCollapse, ImGuiWindowFlags.AlwaysAutoResize))
-    ImGui.SetWindowFontScale(ZoomLvl)
+
     if not open then openConfigGUI = false end
     if showConfigGUI then
-
-        ImGui.SeparatorText("Theme##"..script)
-
-        ImGui.Text("Cur Theme: %s", themeName)
-        -- Combo Box Load Theme
-        if ImGui.BeginCombo("Load Theme##"..script, themeName) then
-            ImGui.SetWindowFontScale(ZoomLvl)
-            for k, data in pairs(theme.Theme) do
-                local isSelected = data.Name == themeName
-                if ImGui.Selectable(data.Name, isSelected) then
-                    theme.LoadTheme = data.Name
-                    themeName = theme.LoadTheme
-                    settings[script].LoadTheme = themeName
-                end
-            end
-            ImGui.EndCombo()
-        end
-
-        if ImGui.Button('Reload Theme File') then
-            loadTheme()
-        end
-        
-        settings[script].MouseOver = ImGui.Checkbox('Mouse Over', settings[script].MouseOver)
-        settings[script].WinTransparency = ImGui.SliderFloat('Window Transparency##'..script, settings[script].WinTransparency, 0.1, 1.0)
-        ImGui.SeparatorText("Scaling##"..script)
-        -- Slider for adjusting zoom level
-        local tmpZoom = ZoomLvl
-        if ZoomLvl then
-            tmpZoom = ImGui.SliderFloat("Zoom Level##"..script, tmpZoom, 0.5, 2.0)
-        end
-        if ZoomLvl ~= tmpZoom then
-            ZoomLvl = tmpZoom
-        end
-        -- Slider for adjusting Icon Size
-        local tmpSize = iconSize
-        if iconSize then
-            tmpSize = ImGui.SliderInt("Icon Size##"..script, tmpSize, 15, 50)
-        end
-        if iconSize ~= tmpSize then
-            iconSize = tmpSize
-        end
-
-        -- Slider for adjusting Progress Bar Size
-        local tmpPrgSz = progressSize
-        if progressSize then
-            tmpPrgSz = ImGui.SliderInt("Progress Bar Size##"..script, tmpPrgSz, 5, 50)
-        end
-        if progressSize ~= tmpPrgSz then
-            progressSize = tmpPrgSz
-        end
-        ProgressSizeTarget = ImGui.SliderInt("Target Progress Bar Size##"..script, ProgressSizeTarget, 5, 150)
-        settings[script].showXtar = ImGui.Checkbox('Show XTarget Number', settings[script].showXtar)
-        ImGui.SeparatorText("Pulse Settings##"..script)
-        flashBorder = ImGui.Checkbox('Flash Border', flashBorder)
-        ImGui.SameLine()
-        local tmpPulse = pulse
-        tmpPulse , _= ImGui.Checkbox('Pulse Icons', tmpPulse)
-        if _ then
-            if tmpPulse == true and pulseSpeed == 0 then
-                pulseSpeed = defaults.pulseSpeed
-            end
-        end
-        if pulse ~= tmpPulse then
-            pulse = tmpPulse
-        end
-        if pulse then
-            local tmpSpeed = pulseSpeed
-            tmpSpeed = ImGui.SliderInt('Icon Pulse Speed##'..script, tmpSpeed, 0, 50)
-            if pulseSpeed ~= tmpSpeed then
-                pulseSpeed = tmpSpeed
-            end
-        end
-        local tmpCmbtSpeed = combatPulseSpeed
-        tmpCmbtSpeed = ImGui.SliderInt('Combat Pulse Speed##'..script, tmpCmbtSpeed, 0, 50)
-        if combatPulseSpeed ~= tmpCmbtSpeed then
-            combatPulseSpeed = tmpCmbtSpeed
-        end
-
-        if ImGui.Button('Reset Defaults##'..script) then
+        ImGui.SetWindowFontScale(FontScale)
+        ImGui.PushStyleColor(ImGuiCol.Button, ImVec4(1,0.4,0.4,0.9))
+        if ImGui.Button("Reset Defaults") then
             settings = dofile(configFile)
             flashBorder = false
             progressSize = 10
-            ZoomLvl = 1
+            FontScale = 1
             iconSize = 26
             themeName = 'Default'
             settings[script].FlashBorder = flashBorder
             settings[script].ProgressSize = progressSize
-            settings[script].Scale = ZoomLvl
+            settings[script].Scale = FontScale
             settings[script].IconSize = iconSize
             settings[script].LoadTheme = themeName
         end
-
-        ImGui.SeparatorText("Dynamic Bar Colors##"..script)
-        local tmpDHP = settings[script].DynamicHP
-        local tmpDMP = settings[script].DynamicMP
-
-        tmpDHP = ImGui.Checkbox('Dynamic HP Bar', tmpDHP)
-        if tmpDHP ~= settings[script].DynamicHP then
-            settings[script].DynamicHP = tmpDHP
-        end
-        ImGui.SameLine()
-        ImGui.SetNextItemWidth(60)
-        colorHpMin = ImGui.ColorEdit4("HP Min Color##"..script, colorHpMin, bit32.bor(ImGuiColorEditFlags.AlphaBar, ImGuiColorEditFlags.NoInputs))
-        ImGui.SameLine()
-        ImGui.SetNextItemWidth(60)
-        colorHpMax = ImGui.ColorEdit4("HP Max Color##"..script, colorHpMax, bit32.bor(ImGuiColorEditFlags.AlphaBar, ImGuiColorEditFlags.NoInputs))
-
-        testValue = ImGui.SliderInt("Test HP##"..script, testValue, 0, 100)
-        local r, g, b, a = CalculateColor(colorHpMin, colorHpMax, testValue)
-
-        ImGui.PushStyleColor(ImGuiCol.PlotHistogram,ImVec4(r, g, b, a))
-        ImGui.ProgressBar((testValue / 100), ImGui.GetContentRegionAvail(), progressSize , '##Test')
         ImGui.PopStyleColor()
-        tmpDMP = ImGui.Checkbox('Dynamic Mana Bar', tmpDMP)
-        if tmpDMP ~= settings[script].DynamicMP then
-            settings[script].DynamicMP = tmpDMP
+
+        if ImGui.CollapsingHeader("Theme##"..script) then
+            ImGui.Text("Cur Theme: %s", themeName)
+            -- Combo Box Load Theme
+            if ImGui.BeginCombo("Load Theme##"..script, themeName) then
+
+                for k, data in pairs(theme.Theme) do
+                    local isSelected = data.Name == themeName
+                    if ImGui.Selectable(data.Name, isSelected) then
+                        theme.LoadTheme = data.Name
+                        themeName = theme.LoadTheme
+                        settings[script].LoadTheme = themeName
+                    end
+                end
+                ImGui.EndCombo()
+            end
+
+            if ImGui.Button('Reload Theme File') then
+                loadTheme()
+            end
+            
+            settings[script].MouseOver = ImGui.Checkbox('Mouse Over', settings[script].MouseOver)
+            settings[script].WinTransparency = ImGui.SliderFloat('Window Transparency##'..script, settings[script].WinTransparency, 0.1, 1.0)
         end
-        ImGui.SameLine()
-        ImGui.SetNextItemWidth(60)
-        colorMpMin = ImGui.ColorEdit4("Mana Min Color##"..script, colorMpMin, bit32.bor( ImGuiColorEditFlags.NoInputs))
-        ImGui.SameLine()
-        ImGui.SetNextItemWidth(60)
-        colorMpMax = ImGui.ColorEdit4("Mana Max Color##"..script, colorMpMax, bit32.bor( ImGuiColorEditFlags.NoInputs))
-        
-        testValue2 = ImGui.SliderInt("Test MP##"..script, testValue2, 0, 100)
-        local r2, g2, b2, a2 = CalculateColor(colorMpMin, colorMpMax, testValue2)
-        ImGui.PushStyleColor(ImGuiCol.PlotHistogram,ImVec4(r2, g2, b2, a2))
-        ImGui.ProgressBar((testValue2 / 100), ImGui.GetContentRegionAvail(), progressSize , '##Test2')
-        ImGui.PopStyleColor()
+        ImGui.Spacing()
+        if ImGui.CollapsingHeader("Scaling##"..script) then
+            -- Slider for adjusting zoom level
+            local tmpZoom = FontScale
+            if FontScale then
+                tmpZoom = ImGui.SliderFloat("Text Scale##"..script, tmpZoom, 0.5, 2.0)
+            end
+            if FontScale ~= tmpZoom then
+                FontScale = tmpZoom
+            end
+            -- Slider for adjusting Icon Size
+            local tmpSize = iconSize
+            if iconSize then
+                tmpSize = ImGui.SliderInt("Icon Size##"..script, tmpSize, 15, 50)
+            end
+            if iconSize ~= tmpSize then
+                iconSize = tmpSize
+            end
+
+            -- Slider for adjusting Progress Bar Size
+            local tmpPrgSz = progressSize
+            if progressSize then
+                tmpPrgSz = ImGui.SliderInt("Progress Bar Size##"..script, tmpPrgSz, 5, 50)
+            end
+            if progressSize ~= tmpPrgSz then
+                progressSize = tmpPrgSz
+            end
+            ProgressSizeTarget = ImGui.SliderInt("Target Progress Bar Size##"..script, ProgressSizeTarget, 5, 150)
+            settings[script].showXtar = ImGui.Checkbox('Show XTarget Number', settings[script].showXtar)
+        end
+        ImGui.Spacing()
+
+        if ImGui.CollapsingHeader("Pulse Settings##"..script) then
+            flashBorder = ImGui.Checkbox('Flash Border', flashBorder)
+            ImGui.SameLine()
+            local tmpPulse = pulse
+            tmpPulse , _= ImGui.Checkbox('Pulse Icons', tmpPulse)
+            if _ then
+                if tmpPulse == true and pulseSpeed == 0 then
+                    pulseSpeed = defaults.pulseSpeed
+                end
+            end
+            if pulse ~= tmpPulse then
+                pulse = tmpPulse
+            end
+            if pulse then
+                local tmpSpeed = pulseSpeed
+                tmpSpeed = ImGui.SliderInt('Icon Pulse Speed##'..script, tmpSpeed, 0, 50)
+                if pulseSpeed ~= tmpSpeed then
+                    pulseSpeed = tmpSpeed
+                end
+            end
+            local tmpCmbtSpeed = combatPulseSpeed
+            tmpCmbtSpeed = ImGui.SliderInt('Combat Pulse Speed##'..script, tmpCmbtSpeed, 0, 50)
+            if combatPulseSpeed ~= tmpCmbtSpeed then
+                combatPulseSpeed = tmpCmbtSpeed
+            end
+        end
+        ImGui.Spacing()
+
+        if ImGui.CollapsingHeader("Dynamic Bar Colors##"..script) then
+            settings[script].DynamicHP = ImGui.Checkbox('Dynamic HP Bar', settings[script].DynamicHP)
+            ImGui.SameLine()
+            ImGui.SetNextItemWidth(60)
+            colorHpMin = ImGui.ColorEdit4("HP Min Color##"..script, colorHpMin, bit32.bor(ImGuiColorEditFlags.AlphaBar, ImGuiColorEditFlags.NoInputs))
+            ImGui.SameLine()
+            ImGui.SetNextItemWidth(60)
+            colorHpMax = ImGui.ColorEdit4("HP Max Color##"..script, colorHpMax, bit32.bor(ImGuiColorEditFlags.AlphaBar, ImGuiColorEditFlags.NoInputs))
+
+            testValue = ImGui.SliderInt("Test HP##"..script, testValue, 0, 100)
+            local r, g, b, a = CalculateColor(colorHpMin, colorHpMax, testValue)
+            ImGui.PushStyleColor(ImGuiCol.PlotHistogram,ImVec4(r, g, b, a))
+            ImGui.ProgressBar((testValue / 100), ImGui.GetContentRegionAvail(), progressSize , '##Test')
+            ImGui.PopStyleColor()
+
+            settings[script].DynamicMP = ImGui.Checkbox('Dynamic Mana Bar', settings[script].DynamicMP)
+            ImGui.SameLine()
+            ImGui.SetNextItemWidth(60)
+            colorMpMin = ImGui.ColorEdit4("Mana Min Color##"..script, colorMpMin, bit32.bor( ImGuiColorEditFlags.NoInputs))
+            ImGui.SameLine()
+            ImGui.SetNextItemWidth(60)
+            colorMpMax = ImGui.ColorEdit4("Mana Max Color##"..script, colorMpMax, bit32.bor( ImGuiColorEditFlags.NoInputs))
+            
+            testValue2 = ImGui.SliderInt("Test MP##"..script, testValue2, 0, 100)
+            local r2, g2, b2, a2 = CalculateColor(colorMpMin, colorMpMax, testValue2)
+            ImGui.PushStyleColor(ImGuiCol.PlotHistogram,ImVec4(r2, g2, b2, a2))
+            ImGui.ProgressBar((testValue2 / 100), ImGui.GetContentRegionAvail(), progressSize , '##Test2')
+            ImGui.PopStyleColor()
+        end
+        ImGui.Spacing()
 
         -- breath bar settings
-        local tmpbreath = settings[script].EnableBreathBar
-        tmpbreath = ImGui.Checkbox('Enable Breath', tmpbreath)
-        if tmpbreath ~= settings[script].EnableBreathBar then
-            settings[script].EnableBreathBar = tmpbreath
+        if ImGui.CollapsingHeader("Breath Meter##"..script) then
+            local tmpbreath = settings[script].EnableBreathBar
+            tmpbreath = ImGui.Checkbox('Enable Breath', tmpbreath)
+            if tmpbreath ~= settings[script].EnableBreathBar then
+                settings[script].EnableBreathBar = tmpbreath
+            end
+            ImGui.SameLine()
+            ImGui.SetNextItemWidth(60)
+            colorBreathMin = ImGui.ColorEdit4("Breath Min Color##"..script, colorBreathMin, bit32.bor( ImGuiColorEditFlags.NoInputs))
+            ImGui.SameLine()
+            ImGui.SetNextItemWidth(60)
+            colorBreathMax = ImGui.ColorEdit4("Breath Max Color##"..script, colorBreathMax, bit32.bor( ImGuiColorEditFlags.NoInputs))
+            local testValue3 = 100
+            testValue3 = ImGui.SliderInt("Test Breath##"..script, testValue3, 0, 100)
+            local r3, g3, b3, a3 = CalculateColor(colorBreathMin, colorBreathMax, testValue3)
+            ImGui.PushStyleColor(ImGuiCol.PlotHistogram,ImVec4(r3, g3, b3, a3))
+            ImGui.ProgressBar((testValue3 / 100), ImGui.GetContentRegionAvail(), progressSize , '##Test3')
+            ImGui.PopStyleColor()
         end
-        ImGui.SameLine()
-        ImGui.SetNextItemWidth(60)
-        colorBreathMin = ImGui.ColorEdit4("Breath Min Color##"..script, colorBreathMin, bit32.bor( ImGuiColorEditFlags.NoInputs))
-        ImGui.SameLine()
-        ImGui.SetNextItemWidth(60)
-        colorBreathMax = ImGui.ColorEdit4("Breath Max Color##"..script, colorBreathMax, bit32.bor( ImGuiColorEditFlags.NoInputs))
-        local testValue3 = 100
-        testValue3 = ImGui.SliderInt("Test Breath##"..script, testValue3, 0, 100)
-        local r3, g3, b3, a3 = CalculateColor(colorBreathMin, colorBreathMax, testValue3)
-        ImGui.PushStyleColor(ImGuiCol.PlotHistogram,ImVec4(r3, g3, b3, a3))
-        ImGui.ProgressBar((testValue3 / 100), ImGui.GetContentRegionAvail(), progressSize , '##Test3')
-        ImGui.PopStyleColor()
+        ImGui.Spacing()
 
-        ImGui.SeparatorText("Save and Close##"..script)
         if ImGui.Button('Save and Close##'..script) then
             openConfigGUI = false
             settings[script].ColorBreathMin = colorBreathMin
@@ -608,11 +600,9 @@ local function PlayerTargConf_GUI()
             settings[script].ColorHPMin = colorHpMin
             settings[script].ColorMPMax = colorMpMax
             settings[script].ColorMPMin = colorMpMin
-            settings[script].DynamicHP = tmpDHP
-            settings[script].DynamicMP = tmpDMP
             settings[script].FlashBorder = flashBorder
             settings[script].ProgressSize = progressSize
-            settings[script].Scale = ZoomLvl
+            settings[script].Scale = FontScale
             settings[script].IconSize = iconSize
             settings[script].LoadTheme = themeName
             settings[script].doPulse = pulse
@@ -640,6 +630,7 @@ end
 local function drawTarget()
     if (TARGET() ~= nil) then
         ImGui.BeginGroup()
+        ImGui.SetWindowFontScale(FontScale)
         local targetName = TARGET.CleanName() or '?'
         local xSlot = findXTarSlot(TARGET.ID()) or 0
         local tC = getConLevel(TARGET) or "WHITE"
@@ -665,12 +656,9 @@ local function drawTarget()
         ImGui.PopStyleColor()
                     
         if ImGui.IsItemHovered() then
-            ImGui.SetWindowFontScale(ZoomLvl)
-            ImGui.BeginTooltip()
-            ImGui.Text("Name: %s\t Lvl: %s\nClass: %s\nType: %s", targetName,tLvl,tClass,tBodyType )
-            ImGui.EndTooltip()
+            ImGui.SetTooltip("Name: %s\t Lvl: %s\nClass: %s\nType: %s", targetName,tLvl,tClass,tBodyType )
         end
-        ImGui.SetWindowFontScale(ZoomLvl)
+        
         ImGui.SetCursorPosY(yPos)
         ImGui.SetCursorPosX(9)
         if ImGui.BeginTable("##targetInfoOverlay", 2, tPlayerFlags) then
@@ -680,6 +668,7 @@ local function drawTarget()
             ImGui.TableNextRow()
             ImGui.TableSetColumnIndex(0)
             -- Name and CON in the first column
+            
             if xSlot > 0 and settings[script].showXtar then
                 ImGui.Text("X#%s %s", xSlot, targetName)
             else
@@ -708,12 +697,12 @@ local function drawTarget()
             ImGui.Text(tostring(tLvl) .. ' ' .. tClass .. '\t' .. tBodyType)
             -- Aggro% text in the second column
             ImGui.TableSetColumnIndex(1)
-            ImGui.SetWindowFontScale(ZoomLvl)
+        
             ImGui.Text(tostring(TARGET.PctHPs()) .. '%')
             ImGui.EndTable()
         end
         ImGui.EndGroup()
-        ImGui.SetWindowFontScale(ZoomLvl)
+    
         ImGui.Separator()
         --Aggro % Bar
         ImGui.PushStyleVar(ImGuiStyleVar.ItemSpacing, 8, 1)
@@ -733,21 +722,23 @@ local function drawTarget()
             if (TARGET.SecondaryAggroPlayer() ~= nil) then
                 ImGui.SetCursorPosY(yPos)
                 ImGui.SetCursorPosX(ImGui.GetCursorPosX() + 5)
-                ImGui.Text(TARGET.SecondaryAggroPlayer())
+                ImGui.Text("%s",TARGET.SecondaryAggroPlayer())
             end
             --Aggro % Label middle of bar
             ImGui.SetCursorPosY(yPos)
             ImGui.SetCursorPosX(ImGui.GetCursorPosX() + ((ImGui.GetWindowWidth() / 2) - 8))
-            ImGui.Text(TARGET.PctAggro())
+            
+            ImGui.Text("%d",TARGET.PctAggro())
             if (TARGET.SecondaryAggroPlayer() ~= nil) then
                 ImGui.SetCursorPosY(yPos)
                 ImGui.SetCursorPosX(ImGui.GetWindowWidth() - 40)
-                ImGui.Text(TARGET.SecondaryPctAggro())
+                ImGui.Text("%d",TARGET.SecondaryPctAggro())
             end
             ImGui.EndGroup()
         else
             ImGui.Text('')
         end
+        ImGui.SetWindowFontScale(1)
         ImGui.PopStyleVar()
         ImGui.EndGroup()
         if ImGui.IsItemHovered() and ImGui.IsMouseReleased(ImGuiMouseButton.Left) then
@@ -764,13 +755,13 @@ local function drawTarget()
             ImGui.EndChild()
             -- End the scrollable region
         end
-                    
+
     else
         ImGui.Text('')
     end
 end
 
-function GUI_Target()
+local function GUI_Target()
     if not ShowGUI then return end
     if TLO.Me.Zoning() then return end
     ColorCount = 0
@@ -800,10 +791,7 @@ function GUI_Target()
                 mq.pickle(configFile, settings)
             end
             if ImGui.IsItemHovered() then
-                ImGui.SetWindowFontScale(ZoomLvl)
-                ImGui.BeginTooltip()
-                ImGui.Text("Lock Window")
-                ImGui.EndTooltip()
+                ImGui.SetTooltip("Lock Window")
             end
             if ImGui.Button(gIcon..'##PlayerTarg') then
                 openConfigGUI = not openConfigGUI
@@ -816,10 +804,7 @@ function GUI_Target()
                 mq.pickle(configFile, settings)
             end
             if ImGui.IsItemHovered() then
-                ImGui.SetWindowFontScale(ZoomLvl)
-                ImGui.BeginTooltip()
-                ImGui.Text("Split Windows")
-                ImGui.EndTooltip()
+                ImGui.SetTooltip("Split Windows")
             end
             ImGui.SetCursorPosX(ImGui.GetWindowContentRegionWidth() - 10)
             if ImGui.MenuItem('X##Close'..script) then
@@ -860,7 +845,7 @@ function GUI_Target()
         end
         ImGui.PushStyleVar(ImGuiStyleVar.WindowPadding, 1,1)
         ImGui.PushStyleVar(ImGuiStyleVar.FramePadding, 4,2)
-        if flashBorder then ImGui.BeginChild('pInfo##', 0,((iconSize+4)*ZoomLvl),cFlag) end
+        if flashBorder then ImGui.BeginChild('pInfo##', 0,((iconSize+4)*FontScale),cFlag, ImGuiWindowFlags.NoScrollbar) end
         if ImGui.BeginTable("##playerInfo", 4, tPFlags) then
             ImGui.TableSetupColumn("##tName", ImGuiTableColumnFlags.NoResize, (ImGui.GetContentRegionAvail() * .5))
             ImGui.TableSetupColumn("##tVis", ImGuiTableColumnFlags.NoResize, 24)
@@ -869,10 +854,12 @@ function GUI_Target()
             ImGui.TableNextRow()
 
             -- Name
-            ImGui.SetWindowFontScale(ZoomLvl)
+        
             ImGui.TableSetColumnIndex(0)
             local meName = ME.DisplayName()
+            ImGui.SetWindowFontScale(FontScale)
             ImGui.Text(" %s",meName)
+            ImGui.SetWindowFontScale(1)
             local combatState = ME.CombatState()
             if ME.Poisoned() and ME.Diseased() then
                 ImGui.SameLine(ImGui.GetColumnWidth() - 45)
@@ -910,17 +897,15 @@ function GUI_Target()
             -- Visiblity
             ImGui.TableSetColumnIndex(1)
             if TARGET() ~= nil then
+                ImGui.SetWindowFontScale(FontScale)
                 if TARGET.LineOfSight() then
-                    ImGui.PushStyleColor(ImGuiCol.Text, 0, 1, 0, 1)
-                    ImGui.Text(Icons.MD_VISIBILITY)
-                    ImGui.PopStyleColor()
+                    ImGui.TextColored(ImVec4(0, 1, 0, 1),Icons.MD_VISIBILITY)
                 else
-                    ImGui.PushStyleColor(ImGuiCol.Text, 0.9, 0, 0, 1)
-                    ImGui.Text(Icons.MD_VISIBILITY_OFF)
-                    ImGui.PopStyleColor()
+                    ImGui.TextColored(ImVec4(0.9, 0, 0, 1),Icons.MD_VISIBILITY_OFF)
                 end
+                ImGui.SetWindowFontScale(1)
             end
-            ImGui.SetWindowFontScale(ZoomLvl)
+        
             -- Icons
             ImGui.TableSetColumnIndex(2)
             ImGui.PushStyleVar(ImGuiStyleVar.ItemSpacing, 0, 0)
@@ -941,19 +926,17 @@ function GUI_Target()
             --  ImGui.SameLine()
             ImGui.Text(' ')
             ImGui.SameLine()
-            ImGui.SetWindowFontScale(ZoomLvl)
+            ImGui.SetWindowFontScale(FontScale)
             ImGui.Text(ME.Heading() or '??')
             ImGui.PopStyleVar()
             -- Lvl
             ImGui.TableSetColumnIndex(3)
             ImGui.PushStyleVar(ImGuiStyleVar.ItemSpacing, 2, 0)
-            ImGui.SetWindowFontScale(ZoomLvl)
+        
             ImGui.Text(tostring(ME.Level() or 0))
+            ImGui.SetWindowFontScale(1)
             if ImGui.IsItemHovered() then
-                ImGui.BeginTooltip()
-                ImGui.SetWindowFontScale(ZoomLvl)
-                ImGui.Text(GetInfoToolTip())
-                ImGui.EndTooltip()
+                ImGui.SetTooltip(GetInfoToolTip())
             end
             ImGui.PopStyleVar()
             ImGui.EndTable()
@@ -968,7 +951,7 @@ function GUI_Target()
         ImGui.PushStyleVar(ImGuiStyleVar.ItemSpacing, 8, 1)
         -- My Health Bar
         local yPos = ImGui.GetCursorPosY()
-        ImGui.SetWindowFontScale(ZoomLvl)
+    
         if settings[script].DynamicHP then
             local hr,hg,hb,ha = CalculateColor(colorHpMin, colorHpMax, ME.PctHPs())
             ImGui.PushStyleColor(ImGuiCol.PlotHistogram, ImVec4(hr, hg, hb, ha))
@@ -991,7 +974,9 @@ function GUI_Target()
         ImGui.PopStyleColor()
         ImGui.SetCursorPosY(yPos-1)
         ImGui.SetCursorPosX(ImGui.GetCursorPosX() + ((ImGui.GetWindowWidth() / 2) - 8))
+        ImGui.SetWindowFontScale(FontScale)
         ImGui.Text(tostring(ME.PctHPs() or 0))
+        ImGui.SetWindowFontScale(1)
         local yPos = ImGui.GetCursorPosY()
         --My Mana Bar
         if (tonumber(ME.MaxMana()) > 0) then
@@ -1005,7 +990,9 @@ function GUI_Target()
             ImGui.PopStyleColor()
             ImGui.SetCursorPosY(yPos -1)
             ImGui.SetCursorPosX(ImGui.GetCursorPosX() + ((ImGui.GetWindowWidth() / 2) - 8))
+            ImGui.SetWindowFontScale(FontScale)
             ImGui.Text(tostring(ME.PctMana() or 0))
+            ImGui.SetWindowFontScale(1)
         end
         local yPos = ImGui.GetCursorPosY()
         --My Endurance bar
@@ -1014,7 +1001,9 @@ function GUI_Target()
         ImGui.PopStyleColor()
         ImGui.SetCursorPosY(yPos -1)
         ImGui.SetCursorPosX(ImGui.GetCursorPosX() + ((ImGui.GetWindowWidth() / 2) - 8))
+        ImGui.SetWindowFontScale(FontScale)
         ImGui.Text(tostring(ME.PctEndurance() or 0))
+        ImGui.SetWindowFontScale(1)
         ImGui.Separator()
         ImGui.EndGroup()
         if ImGui.IsItemHovered() and ImGui.IsMouseReleased(ImGuiMouseButton.Left) then
@@ -1029,7 +1018,7 @@ function GUI_Target()
     end
     if StyleCount > 0 then ImGui.PopStyleVar(StyleCount) end
     if ColorCount > 0 then ImGui.PopStyleColor(ColorCount) end
-    ImGui.SetWindowFontScale(1)
+
     ImGui.End()
 
     
@@ -1052,7 +1041,7 @@ function GUI_Target()
         
         if styleCountTarget > 0 then ImGui.PopStyleVar(styleCountTarget) end
         if colorCountTarget > 0 then ImGui.PopStyleColor(colorCountTarget) end
-        ImGui.SetWindowFontScale(1)
+    
         ImGui.End()
     end
 
@@ -1070,7 +1059,8 @@ function GUI_Target()
             breathBarShow = false
         end
         if showBreath then
-            
+            ImGui.SetWindowFontScale(FontScale)
+
             local yPos = ImGui.GetCursorPosY()
             local red,green,blu,alpha = CalculateColor(colorBreathMin, colorBreathMax, breathPct)
             ImGui.PushStyleColor(ImGuiCol.PlotHistogram, ImVec4(red, green, blu, alpha))
@@ -1087,6 +1077,7 @@ function GUI_Target()
                 end
                 ImGui.EndPopup()
             end
+            ImGui.SetWindowFontScale(1)
         end
         if StyleCountBreath > 0 then ImGui.PopStyleVar(StyleCountBreath) end
         if ColorCountBreath > 0 then ImGui.PopStyleColor(ColorCountBreath) end
