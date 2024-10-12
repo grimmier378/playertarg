@@ -29,7 +29,7 @@ local iconSize, progressSize = 26, 10
 local flashAlpha, FontScale, cAlpha = 1, 1, 255
 local ShowGUI, locked, flashBorder, rise, cRise = true, false, true, true, false
 local openConfigGUI, openGUI = false, true
-local themeFile = mq.configDir .. '/MyThemeZ.lua'
+local themeFile = MyUI_ThemeFile == nil and string.format('%s/MyUI/ThemeZ.lua', mq.configDir) or MyUI_ThemeFile
 local configFileOld = mq.configDir .. '/MyUI_Configs.lua'
 local configFile = string.format('%s/MyUI/PlayerTarg/%s/%s.lua', mq.configDir, MyUI_Server, MyUI_CharLoaded)
 local ColorCount, ColorCountConf, StyleCount, StyleCountConf = 0, 0, 0, 0
@@ -174,7 +174,7 @@ end
 
 local function pulseGeneric(speed, alpha, rising, lastTime, frameTime, maxAlpha, minAlpha)
     if speed == 0 then return alpha, rising, lastTime end
-    local currentTime = os.clock()
+    local currentTime = os.time()
     if currentTime - lastTime < frameTime then
         return alpha, rising, lastTime -- exit if not enough time has passed
     end
@@ -192,7 +192,7 @@ local function pulseGeneric(speed, alpha, rising, lastTime, frameTime, maxAlpha,
     return alpha, rising, lastTime
 end
 
-local lastTime, lastTimeCombat = os.clock(), os.clock()
+local lastTime, lastTimeCombat = os.time(), os.time()
 local frameTime, frameTimeCombat = 1 / 60, 1 / 120
 
 local function pulseIcon(speed)
