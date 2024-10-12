@@ -131,7 +131,6 @@ local function loadSettings()
         -- Load settings from the Lua config file
         settings = dofile(configFile)
         if not settings[Module.Name] then
-            settings[Module.Name] = {}
             settings[Module.Name] = defaults
         end
     end
